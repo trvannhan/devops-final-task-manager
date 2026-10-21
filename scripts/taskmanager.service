@@ -1,0 +1,17 @@
+[Unit]
+Description=DevOps Final Task Manager (Flask)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=vannhan
+Group=vannhan
+WorkingDirectory=/home/vannhan/devops-final-task-manager
+EnvironmentFile=/etc/devops-task-manager.env
+ExecStart=/home/vannhan/devops-final-task-manager/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 app.main:app
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
