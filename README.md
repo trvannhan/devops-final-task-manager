@@ -1,7 +1,11 @@
-# DevOps Task Manager — Final Project 2026 (Week 1)
+# DevOps Task Manager — Final Project 2026
 
-Ứng dụng web Flask + JSON API + cơ sở dữ liệu PostgreSQL, triển khai thủ công trên máy ảo Ubuntu, phía sau reverse proxy Nginx.
-**Week 1: triển khai thủ công. Docker và CI/CD sẽ được bổ sung ở Week 2.**
+Ứng dụng web Flask + JSON API + cơ sở dữ liệu PostgreSQL, chạy trên máy ảo Ubuntu phía sau reverse proxy Nginx.
+
+| Tuần | Cách triển khai | Hướng dẫn |
+|------|-----------------|-----------|
+| Week 1 | Thủ công: venv + systemd + PostgreSQL cài trên VM | [Hướng dẫn cài đặt thủ công](#hướng-dẫn-cài-đặt-thủ-công-week-1) |
+| **Week 2** (hiện tại) | Docker Compose + GitHub Actions CI/CD, deploy tự động qua self-hosted runner | [Week 2](#week-2-docker-compose-và-cicd) |
 
 ## Nguồn code và phạm vi
 - Nguồn: mã nguồn ứng dụng được viết với sự hỗ trợ của trợ lý AI, sau đó nhóm review, kiểm thử và triển khai. Không sao chép template từ dự án bên thứ ba.
@@ -32,7 +36,9 @@ Xem chi tiết tại [`docs/architecture.md`](docs/architecture.md) và [`docs/a
 
 Địa chỉ IP của VM không được ghi trong repository; dùng lệnh `hostname -I` trên VM để xem.
 
-## Hướng dẫn cài đặt thủ công (Ubuntu 26.04)
+## Hướng dẫn cài đặt thủ công (Week 1)
+Phần này mô tả cách triển khai Week 1 (Ubuntu 26.04). Từ Week 2, ứng dụng chạy bằng Docker, xem [Week 2](#week-2-docker-compose-và-cicd).
+
 Nên tạo snapshot cho VM trước khi bắt đầu.
 
 ```bash
@@ -58,12 +64,11 @@ cd ~
 git clone https://github.com/trvannhan/devops-final-task-manager.git
 cd devops-final-task-manager
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-sudo cp .env.example /etc/devops-task-manager.env
-sudo chmod 600 /etc/devops-task-manager.env
+.venv/bin/pip install -r requirements-dev.txt
+sudo install -m 600 /dev/null /etc/devops-task-manager.env
 sudo nano /etc/devops-task-manager.env
 ```
-Trong file môi trường, đặt
+Trong file môi trường, ghi dòng
 `DATABASE_URL=postgresql://taskapp:YOUR_OWN_PASSWORD@127.0.0.1:5432/taskdb`
 với mật khẩu giống mật khẩu của role PostgreSQL ở bước 1. File này nằm ngoài repository và chỉ root đọc được.
 
@@ -126,6 +131,100 @@ Trên trình duyệt Windows, mở `http://<VM_IP>:8080/` (thay `<VM_IP>` bằng
 - [x] Ảnh truy cập web từ Windows qua cổng 8080 (`evidence/07a`, `07b`)
 - [ ] Video demo dự phòng
 
+## Week 2: Docker Compose và CI/CD
+
+### Kiến trúc Week 2
+```text
+Developer --git push--> GitHub
+                          |
+                  GitHub Actions (.github/workflows/ci-cd.yml)
+                    1. test   : ubuntu-latest + PostgreSQL 18 tạm -> pytest (unit + tích hợp)
+                    2. build  : build Docker image -> ghcr.io/trvannhan/devops-final-task-manager:<commit>
+                    3. deploy : self-hosted runner trong VM -> docker compose pull + up -d -> smoke test
+                          |
+VM Ubuntu (NAT): Nginx :8080 (giữ từ Week 1) -> container app 127.0.0.1:8000 -> container db (volume taskmanager_pgdata)
+```
+VM dùng mạng NAT, không có IP public, nên GitHub không thể SSH vào VM. Thay vào đó, **self-hosted runner** chạy trong VM tự kết nối ra GitHub để nhận job deploy, không cần mở thêm cổng nào.
+
+### Các file của Week 2
+| File | Vai trò |
+|------|---------|
+| `Dockerfile` | Image `python:3.14-slim`, cài thư viện trước để tận dụng cache, chạy Gunicorn bằng user không phải root, có `HEALTHCHECK` |
+| `.dockerignore` | Loại `.git`, tests, docs, evidence... khỏi image |
+| `docker-compose.yml` | Service `app` + `db` (PostgreSQL 18), network `backend`, volume `pgdata`; app chỉ mở `127.0.0.1:8000` |
+| `.github/workflows/ci-cd.yml` | Pipeline test → build → deploy |
+| `tests/test_integration.py` | Test CRUD với PostgreSQL thật; test lỗi làm pipeline fail |
+| `requirements-dev.txt` | Thư viện cho test (pytest), tách khỏi image chạy thật |
+| `scripts/migrate-host-db-to-docker.sh` | Chuyển dữ liệu Week 1 sang container (chạy một lần) |
+
+Phiên bản đang chạy (7 ký tự đầu của commit) hiển thị ở `GET /health` (`"version"`) và ở chân trang web, dùng để chứng minh deploy thành công.
+
+### Cài đặt trên VM (làm một lần)
+**1. Cài Docker và cho user `vannhan` dùng Docker**
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker vannhan
+newgrp docker
+docker compose version
+```
+
+**2. Tạo thư mục deploy**
+```bash
+sudo install -d -o vannhan -g vannhan -m 750 /opt/taskmanager
+```
+
+**3. Tạo secret trên GitHub**: repository → *Settings* → *Secrets and variables* → *Actions* → *New repository secret*, tên `POSTGRES_PASSWORD`, giá trị là mật khẩu mới chỉ gồm chữ và số.
+
+**4. Dừng app Week 1** để giải phóng cổng 8000 (Nginx và PostgreSQL trên VM giữ nguyên):
+```bash
+sudo systemctl disable --now taskmanager
+```
+
+**5. Cài self-hosted runner**: repository → *Settings* → *Actions* → *Runners* → *New self-hosted runner* → chọn *Linux*, *x64*. Chạy các lệnh GitHub hiển thị (tải về, `./config.sh --url ... --token ...`, nhấn Enter để giữ tên và label mặc định), sau đó cài runner thành service:
+```bash
+cd ~/actions-runner
+sudo ./svc.sh install vannhan
+sudo ./svc.sh start
+```
+Runner hiện trạng thái **Idle** (màu xanh) trong trang *Runners* là được.
+
+**6. Chạy pipeline**: tab *Actions* → *CI/CD* → *Run workflow* (hoặc push một commit lên `main`).
+
+**7. Chuyển dữ liệu Week 1 sang container** (một lần, sau khi deploy đầu tiên thành công):
+```bash
+cd ~/devops-final-task-manager && git pull
+bash scripts/migrate-host-db-to-docker.sh
+```
+
+### Kiểm tra
+```bash
+cd /opt/taskmanager
+docker compose ps                       # app và db: running (healthy)
+curl -s http://127.0.0.1:8080/health; echo   # có "version":"<7 ký tự commit>"
+docker volume ls | grep pgdata
+docker compose exec db psql -U taskapp -d taskdb -c 'SELECT id,title,completed FROM tasks ORDER BY id;'
+```
+
+### Demo Week 2
+1. **Persistence**: thêm một task trên web, rồi xóa và tạo lại container; task vẫn còn.
+   ```bash
+   cd /opt/taskmanager
+   docker compose down          # xóa container, KHÔNG dùng -v (sẽ xóa volume)
+   docker compose up -d
+   ```
+2. **Commit → pipeline → bản mới**: sửa một dòng nhỏ (ví dụ chữ trong `app/templates/index.html`), commit và push lên `main`; mở tab *Actions* xem 3 job chuyển xanh; tải lại web thấy nội dung mới và số version ở chân trang trùng với commit vừa push.
+3. **Test thất bại**: tạo nhánh, cố ý làm sai một assert trong `tests/`, mở Pull Request; job *Test* báo đỏ, job *Build* và *Deploy* không chạy.
+
+### Hồ sơ nộp Week 2
+- [x] `Dockerfile` + `docker-compose.yml`
+- [x] Workflow `.github/workflows/ci-cd.yml`
+- [x] Test source (`tests/`)
+- [ ] Ảnh/log workflow chạy xanh và log job deploy
+- [ ] Ảnh `docker compose ps`, volume và dữ liệu còn sau khi tạo lại container
+- [ ] Ảnh/video phiên bản trước và sau khi deploy
+- [ ] Ảnh pipeline fail khi test lỗi
+
 ## Phân công nhiệm vụ
 | Thành viên | MSSV | Phụ trách | Minh chứng |
 |------------|------|-----------|------------|
@@ -134,6 +233,5 @@ Trên trình duyệt Windows, mở `http://<VM_IP>:8080/` (thay `<VM_IP>` bằng
 | Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
 
 ## Các tuần tiếp theo
-- Week 2: Dockerfile, Docker Compose, volume, kiểm thử tự động và CI/CD.
 - Week 3: giám sát (metrics, dashboard, cảnh báo), firewall/secrets, backup/restore.
 - Week 4: demo toàn hệ thống, troubleshooting playbook và báo cáo kỹ thuật.

@@ -6,6 +6,7 @@ from psycopg.rows import dict_row
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
+APP_VERSION = os.environ.get("APP_VERSION", "dev")
 
 def db():
     url = os.environ.get("DATABASE_URL")
@@ -22,10 +23,15 @@ def health():
     try:
         with db() as conn:
             conn.execute("SELECT 1")
-        return jsonify(status="ok", database="connected")
+        return jsonify(status="ok", database="connected", version=APP_VERSION)
     except (psycopg.Error, RuntimeError):
         app.logger.exception("Database health check failed")
-        return jsonify(status="error", database="unavailable"), 503
+        return jsonify(status="error", database="unavailable", version=APP_VERSION), 503
+
+@app.errorhandler(psycopg.OperationalError)
+def database_unavailable(error):
+    app.logger.error("Database unavailable: %s", error)
+    return jsonify(error="Database unavailable"), 503
 
 @app.get("/api/tasks")
 def tasks():
