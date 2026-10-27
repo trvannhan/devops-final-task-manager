@@ -121,9 +121,10 @@ From the Windows browser open `http://<VM_IP>:8080/`, add a task, reload the pag
 - [x] Architecture: `docs/architecture.md`, `docs/architecture.png`
 - [x] Repository, source code, this README
 - [x] Team task allocation (below)
-- [ ] Server evidence in `evidence/`: OS release, SSH login, `ufw status`, listening ports, service status
-- [ ] App + DB evidence: POST/GET/PATCH responses and PostgreSQL SELECT (no passwords)
-- [ ] Screenshot/video of the site opened from Windows on port 8080
+- [x] Server evidence in `evidence/`: OS release, SSH login, `ufw status`, listening ports, service status
+- [x] App + DB evidence: POST/GET/PATCH responses and PostgreSQL SELECT (no passwords)
+- [x] Screenshots of the site opened from Windows on port 8080 (`evidence/07a`, `07b`)
+- [ ] Backup demo video
 
 ## Team task allocation
 | Member | Student ID | Responsibility | Evidence |
