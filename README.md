@@ -1,58 +1,58 @@
 # DevOps Task Manager — Final Project 2026 (Week 1)
 
-Flask web + JSON API + PostgreSQL database, deployed manually on an Ubuntu VM behind Nginx.
-**Week 1: manual deployment. Docker and CI/CD will be added in Week 2.**
+Ứng dụng web Flask + JSON API + cơ sở dữ liệu PostgreSQL, triển khai thủ công trên máy ảo Ubuntu, phía sau reverse proxy Nginx.
+**Week 1: triển khai thủ công. Docker và CI/CD sẽ được bổ sung ở Week 2.**
 
-## Source and scope
-- Source: application code was written with the help of an AI assistant, then reviewed, tested and deployed by the team. No third-party project template was copied.
-- Team's own work: application code, deployment architecture, Ubuntu/Nginx/systemd/UFW configuration, documentation.
+## Nguồn code và phạm vi
+- Nguồn: mã nguồn ứng dụng được viết với sự hỗ trợ của trợ lý AI, sau đó nhóm review, kiểm thử và triển khai. Không sao chép template từ dự án bên thứ ba.
+- Phần nhóm tự thực hiện: mã nguồn ứng dụng, thiết kế kiến trúc triển khai, cấu hình Ubuntu/Nginx/systemd/UFW, tài liệu.
 
-## Features
-- View all tasks, add a task, mark completed/reopen, delete.
-- `GET /health`, `GET /api/tasks`, `POST /api/tasks`, `PATCH /api/tasks/<id>`, `DELETE /api/tasks/<id>`.
-- Tasks are stored in PostgreSQL (not browser local storage), so they survive page reloads and restarts.
+## Chức năng
+- Xem danh sách công việc, thêm công việc, đánh dấu hoàn thành/làm lại, xóa.
+- API: `GET /health`, `GET /api/tasks`, `POST /api/tasks`, `PATCH /api/tasks/<id>`, `DELETE /api/tasks/<id>`.
+- Dữ liệu lưu trong PostgreSQL (không lưu trên trình duyệt), nên vẫn còn sau khi tải lại trang hoặc khởi động lại máy.
 
-## Architecture
-Browser -> Nginx on the VM (`:8080`) -> Gunicorn/Flask (`127.0.0.1:8000`) -> PostgreSQL (`127.0.0.1:5432`) -> VM disk.
-See [`docs/architecture.md`](docs/architecture.md) and [`docs/architecture.png`](docs/architecture.png).
+## Kiến trúc
+Trình duyệt -> Nginx trên VM (`:8080`) -> Gunicorn/Flask (`127.0.0.1:8000`) -> PostgreSQL (`127.0.0.1:5432`) -> ổ đĩa VM.
+Xem chi tiết tại [`docs/architecture.md`](docs/architecture.md) và [`docs/architecture.png`](docs/architecture.png).
 
-![Architecture](docs/architecture.png)
+![Sơ đồ kiến trúc](docs/architecture.png)
 
-> Port 80 on the same VM belongs to another course project (`devops-app`). Task Manager uses **8080** so both run side by side; nothing in this guide touches the port-80 site.
+> Cổng 80 trên cùng VM thuộc về một project khác của môn học (`devops-app`). Task Manager dùng cổng **8080** để hai project chạy song song; hướng dẫn này không thay đổi site ở cổng 80.
 
-## Server environment
-| Item | Value |
-|------|-------|
-| Hypervisor | VMware Workstation, NAT network (VMnet8); the Windows host reaches the VM directly |
-| OS | Ubuntu 26.04.1 LTS |
-| CPU / RAM / Disk | 2 vCPU / 4 GB RAM (3.3 GiB usable) / 35 GB disk (`/dev/sda2`) |
-| PostgreSQL | 18.6 (Ubuntu package `18.6-0ubuntu0.26.04.1`) |
+## Môi trường máy chủ
+| Mục | Giá trị |
+|-----|---------|
+| Ảo hóa | VMware Workstation, mạng NAT (VMnet8); máy Windows (host) truy cập trực tiếp vào VM |
+| Hệ điều hành | Ubuntu 26.04.1 LTS |
+| CPU / RAM / Disk | 2 vCPU / 4 GB RAM (dùng được 3.3 GiB) / 35 GB (`/dev/sda2`) |
+| PostgreSQL | 18.6 (gói Ubuntu `18.6-0ubuntu0.26.04.1`) |
 | Python | 3.14.4 |
-| Admin user | `vannhan` (SSH) |
+| User quản trị | `vannhan` (SSH) |
 
-The VM's IP address is not recorded in this repository; use `hostname -I` on the VM.
+Địa chỉ IP của VM không được ghi trong repository; dùng lệnh `hostname -I` trên VM để xem.
 
-## Manual installation (Ubuntu 26.04)
-Take a VM snapshot first.
+## Hướng dẫn cài đặt thủ công (Ubuntu 26.04)
+Nên tạo snapshot cho VM trước khi bắt đầu.
 
 ```bash
 sudo apt update
-sudo apt install -y git python3 python3-venv python3-pip postgresql nginx curl ufw
-sudo systemctl enable --now postgresql nginx
+sudo apt install -y git python3 python3-venv python3-pip postgresql nginx curl ufw openssh-server
+sudo systemctl enable --now postgresql nginx ssh
 ```
 
-### 1. PostgreSQL user and database
+### 1. Tạo user và database PostgreSQL
 ```bash
 sudo -u postgres psql
 ```
-Inside `psql` (use your own long alphanumeric password, never commit it):
+Trong `psql` (dùng mật khẩu riêng, dài, chỉ gồm chữ và số; không commit mật khẩu lên Git):
 ```sql
 CREATE USER taskapp WITH PASSWORD 'CHANGE_ME_LONG_RANDOM_PASSWORD';
 CREATE DATABASE taskdb OWNER taskapp;
 \q
 ```
 
-### 2. Get the code and install dependencies
+### 2. Lấy mã nguồn và cài thư viện
 ```bash
 cd ~
 git clone https://github.com/trvannhan/devops-final-task-manager.git
@@ -63,19 +63,19 @@ sudo cp .env.example /etc/devops-task-manager.env
 sudo chmod 600 /etc/devops-task-manager.env
 sudo nano /etc/devops-task-manager.env
 ```
-In the environment file set
+Trong file môi trường, đặt
 `DATABASE_URL=postgresql://taskapp:YOUR_OWN_PASSWORD@127.0.0.1:5432/taskdb`
-with the same password as the PostgreSQL role. The file lives outside the repository and is readable by root only.
+với mật khẩu giống mật khẩu của role PostgreSQL ở bước 1. File này nằm ngoài repository và chỉ root đọc được.
 
-### 3. Create the table
+### 3. Tạo bảng
 ```bash
 cd ~/devops-final-task-manager
 sudo bash -c 'set -a; . /etc/devops-task-manager.env; set +a; psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f schema.sql'
 ```
-Expected output: `CREATE TABLE`. The table is owned by `taskapp`. Do not show `DATABASE_URL` in demo videos.
+Kết quả mong đợi: `CREATE TABLE`. Bảng thuộc sở hữu của `taskapp`. Không để lộ `DATABASE_URL` trong video demo.
 
-### 4. systemd service, Nginx and firewall
-Check the paths in `scripts/taskmanager.service` match your user, then:
+### 4. Service systemd, Nginx và firewall
+Kiểm tra đường dẫn trong `scripts/taskmanager.service` khớp với user của bạn, sau đó:
 ```bash
 sudo cp scripts/taskmanager.service /etc/systemd/system/taskmanager.service
 sudo systemctl daemon-reload
@@ -86,17 +86,17 @@ sudo ln -sfn /etc/nginx/sites-available/taskmanager /etc/nginx/sites-enabled/tas
 sudo nginx -t
 sudo systemctl reload nginx
 ```
-Firewall (confirm SSH works before enabling UFW):
+Firewall (kiểm tra SSH hoạt động trước khi bật UFW):
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 8080/tcp     # Task Manager
-sudo ufw allow 80/tcp       # existing devops-app project (keep if still used)
+sudo ufw allow 80/tcp       # project devops-app có sẵn (giữ lại nếu vẫn dùng)
 sudo ufw enable
 sudo ufw status verbose
 ```
-Never open 8000 (Gunicorn) or 5432 (PostgreSQL); both listen on 127.0.0.1 only.
+Tuyệt đối không mở cổng 8000 (Gunicorn) và 5432 (PostgreSQL); cả hai chỉ lắng nghe trên 127.0.0.1.
 
-### 5. Verification
+### 5. Kiểm tra
 ```bash
 lsb_release -a
 hostname -I
@@ -106,32 +106,34 @@ sudo ss -lntp | grep -E ':22 |:8080 |:8000 |:5432 '
 curl -i http://127.0.0.1:8080/health
 curl -i -X POST http://127.0.0.1:8080/api/tasks -H 'Content-Type: application/json' \
      -d '{"title":"Demo Week 1","description":"Test read/write"}'
-curl -s http://127.0.0.1:8080/api/tasks
-# replace 1 with the id returned by the POST above
-curl -i -X PATCH http://127.0.0.1:8080/api/tasks/1 -H 'Content-Type: application/json' -d '{"completed":true}'
+curl -s http://127.0.0.1:8080/api/tasks; echo
+# thay số 1 bằng id trả về từ lệnh POST ở trên
+curl -i -X PATCH http://127.0.0.1:8080/api/tasks/1 -H 'Content-Type: application/json' -d '{"completed":true}'; echo
 sudo -u postgres psql -d taskdb -c 'SELECT id,title,completed FROM tasks ORDER BY id DESC LIMIT 10;'
 
 .venv/bin/python -m pytest -q
 ```
-Expected `/health`: `{"database":"connected","status":"ok"}`.
+Kết quả mong đợi của `/health`: `{"database":"connected","status":"ok"}`.
 
-From the Windows browser open `http://<VM_IP>:8080/`, add a task, reload the page, mark it completed, and match the result with the SQL query above.
+Trên trình duyệt Windows, mở `http://<VM_IP>:8080/` (thay `<VM_IP>` bằng IP thật của VM), thêm một công việc, tải lại trang, đánh dấu hoàn thành và đối chiếu với kết quả câu lệnh SQL ở trên.
 
-## Week 1 deliverables
-- [x] Architecture: `docs/architecture.md`, `docs/architecture.png`
-- [x] Repository, source code, this README
-- [x] Team task allocation (below)
-- [x] Server evidence in `evidence/`: OS release, SSH login, `ufw status`, listening ports, service status
-- [x] App + DB evidence: POST/GET/PATCH responses and PostgreSQL SELECT (no passwords)
-- [x] Screenshots of the site opened from Windows on port 8080 (`evidence/07a`, `07b`)
-- [ ] Backup demo video
+## Hồ sơ nộp Week 1
+- [x] Kiến trúc: `docs/architecture.md`, `docs/architecture.png`
+- [x] Repository, mã nguồn, README này
+- [x] Phân công nhiệm vụ (bên dưới)
+- [x] Minh chứng server trong `evidence/`: phiên bản OS, đăng nhập SSH, `ufw status`, các cổng đang lắng nghe, trạng thái service
+- [x] Minh chứng app + DB: kết quả POST/GET/PATCH và câu SELECT trong PostgreSQL (không lộ mật khẩu)
+- [x] Ảnh truy cập web từ Windows qua cổng 8080 (`evidence/07a`, `07b`)
+- [ ] Video demo dự phòng
 
-## Team task allocation
-| Member | Student ID | Responsibility | Evidence |
-|--------|-----------|----------------|----------|
-| Trần Văn Nhân (lead) | 23090036 | Ubuntu VM and SSH, Flask app/API, GitHub repository | VM screenshots, API evidence, commits |
-| Trần Văn Lực | 23090019 | UFW firewall, Nginx + systemd deployment, architecture diagram | `ufw status`, service status, `docs/` |
-| Nguyễn Vũ Hoàng Long | 23090026 | PostgreSQL database and CRUD, README, demo video | SQL evidence, README, video |
+## Phân công nhiệm vụ
+| Thành viên | MSSV | Phụ trách | Minh chứng |
+|------------|------|-----------|------------|
+| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | ảnh VM, minh chứng API, commit |
+| Trần Văn Lực | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | `ufw status`, trạng thái service, `docs/` |
+| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
 
-## Next weeks
-Week 2: Dockerfile, Compose, volume, automated tests and CI/CD. Week 3: metrics, dashboard, alerts, firewall/secrets, backup/restore. Week 4: full demo, troubleshooting playbook and technical report.
+## Các tuần tiếp theo
+- Week 2: Dockerfile, Docker Compose, volume, kiểm thử tự động và CI/CD.
+- Week 3: giám sát (metrics, dashboard, cảnh báo), firewall/secrets, backup/restore.
+- Week 4: demo toàn hệ thống, troubleshooting playbook và báo cáo kỹ thuật.

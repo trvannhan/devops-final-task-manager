@@ -17,20 +17,20 @@
   </defs>
   <rect width="1460" height="1000" fill="#ffffff"/>
 
-  <text x="730" y="48" text-anchor="middle" font-size="30" font-weight="800" fill="#111827">DevOps Final Project – Task Manager System Architecture (Week 1)</text>
+  <text x="730" y="48" text-anchor="middle" font-size="30" font-weight="800" fill="#111827">DevOps Final Project – Kiến trúc hệ thống Task Manager (Week 1)</text>
 
   <!-- ===== Panel 1: runtime ===== -->
   <rect x="20" y="75" width="1420" height="560" fill="none" stroke="#1f2937" stroke-width="1.4"/>
-  <text x="40" y="110" class="h">Runtime: web request path</text>
+  <text x="40" y="110" class="h">Vận hành: luồng request web</text>
 
   <!-- Client side -->
-  <text x="40" y="200" class="s" font-weight="700">Windows host</text>
+  <text x="40" y="200" class="s" font-weight="700">Máy host Windows</text>
   <rect x="40" y="250" width="210" height="80" class="box"/>
-  <text x="145" y="283" text-anchor="middle" class="t">Browser / Client</text>
-  <text x="145" y="307" text-anchor="middle" class="s">Windows user</text>
+  <text x="145" y="283" text-anchor="middle" class="t">Trình duyệt / Client</text>
+  <text x="145" y="307" text-anchor="middle" class="s">Người dùng Windows</text>
 
   <rect x="40" y="440" width="210" height="70" class="box"/>
-  <text x="145" y="470" text-anchor="middle" class="t">Admin</text>
+  <text x="145" y="470" text-anchor="middle" class="t">Quản trị viên</text>
   <text x="145" y="493" text-anchor="middle" class="s">SSH client</text>
 
   <!-- UFW wall -->
@@ -39,7 +39,7 @@
 
   <!-- VM boundary -->
   <rect x="345" y="130" width="1075" height="485" rx="10" fill="#fafbfc" stroke="#1f2937" stroke-width="1.8" class="dash"/>
-  <text x="365" y="160" font-size="18" font-weight="800" fill="#111827">Ubuntu 26.04.1 LTS VM · VMware NAT (VMnet8) · 2 vCPU · 4 GB RAM · 35 GB disk</text>
+  <text x="365" y="160" font-size="18" font-weight="800" fill="#111827">VM Ubuntu 26.04.1 LTS · VMware NAT (VMnet8) · 2 vCPU · 4 GB RAM · 35 GB disk</text>
 
   <!-- systemd + env -->
   <rect x="690" y="180" width="280" height="60" class="box"/>
@@ -50,9 +50,9 @@
   <text x="1225" y="205" text-anchor="middle" class="t">EnvironmentFile (chmod 600)</text>
   <text x="1225" y="227" text-anchor="middle" class="s">/etc/devops-task-manager.env</text>
   <path d="M1060,210 L972,210" class="ln"/>
-  <text x="1016" y="200" text-anchor="middle" class="l">loads</text>
+  <text x="1016" y="200" text-anchor="middle" class="l">nạp</text>
   <path d="M830,240 L830,288" class="ln"/>
-  <text x="840" y="270" class="l">runs</text>
+  <text x="840" y="270" class="l">chạy</text>
 
   <!-- main chain -->
   <rect x="390" y="290" width="210" height="80" class="key"/>
@@ -74,17 +74,17 @@
   <path d="M600,330 L688,330" class="ln"/>
   <text x="644" y="320" text-anchor="middle" class="l">proxy_pass</text>
   <path d="M970,330 L1058,330" class="ln"/>
-  <text x="1014" y="320" text-anchor="middle" class="l">read/write</text>
+  <text x="1014" y="320" text-anchor="middle" class="l">đọc/ghi</text>
 
   <!-- storage cylinder -->
   <g>
     <path d="M1080,460 L1080,525 A120,16 0 0 0 1320,525 L1320,460" fill="#eef2f7" stroke="#1f2937" stroke-width="1.6"/>
     <ellipse cx="1200" cy="460" rx="120" ry="16" fill="#e3e9f1" stroke="#1f2937" stroke-width="1.6"/>
-    <text x="1200" y="500" text-anchor="middle" class="t">Storage: VM virtual disk</text>
+    <text x="1200" y="500" text-anchor="middle" class="t">Lưu trữ: ổ đĩa ảo VM</text>
     <text x="1200" y="522" text-anchor="middle" class="s">/var/lib/postgresql</text>
   </g>
   <path d="M1200,375 L1200,441" class="ln"/>
-  <text x="1210" y="414" class="l">persistent data</text>
+  <text x="1210" y="414" class="l">dữ liệu bền vững</text>
 
   <!-- ssh -->
   <rect x="390" y="440" width="210" height="70" class="box"/>
@@ -92,51 +92,51 @@
   <text x="495" y="493" text-anchor="middle" class="s">user vannhan</text>
   <path d="M250,475 L388,475" class="ln"/>
   <text x="145" y="430" text-anchor="middle" class="l" font-weight="700">SSH → VM_IP:22</text>
-  <text x="40" y="560" class="l" font-weight="700">UFW rules</text>
-  <text x="40" y="580" class="l">allow 22/tcp, 8080/tcp</text>
-  <text x="40" y="600" class="l">80/tcp = other project</text>
+  <text x="40" y="560" class="l" font-weight="700">Luật UFW</text>
+  <text x="40" y="580" class="l">cho phép 22/tcp, 8080/tcp</text>
+  <text x="40" y="600" class="l">80/tcp = project khác</text>
 
   <!-- other project -->
   <rect x="690" y="440" width="280" height="70" fill="#ffffff" stroke="#6b7280" stroke-width="1.4" class="dash"/>
   <text x="830" y="470" text-anchor="middle" font-size="15" font-weight="700" fill="#4b5563">Nginx :80 → devops-app</text>
-  <text x="830" y="493" text-anchor="middle" font-size="13.5" fill="#6b7280">other course project (not this system)</text>
+  <text x="830" y="493" text-anchor="middle" font-size="13.5" fill="#6b7280">project khác, không thuộc hệ thống</text>
 
-  <text x="365" y="560" class="n"><tspan font-weight="700">Internal only:</tspan> 8000 and 5432 listen on 127.0.0.1 and are not opened in UFW.</text>
+  <text x="365" y="560" class="n"><tspan font-weight="700">Chỉ nội bộ:</tspan> 8000 và 5432 lắng nghe trên 127.0.0.1, không mở trong UFW.</text>
   <text x="365" y="588" class="n"><tspan font-weight="700">Health check:</tspan> GET /health → {"status":"ok","database":"connected"}</text>
 
   <!-- ===== Panel 2: deployment ===== -->
   <rect x="20" y="655" width="1420" height="325" fill="none" stroke="#1f2937" stroke-width="1.4"/>
-  <text x="40" y="692" class="h">Deployment (manual, Week 1)</text>
+  <text x="40" y="692" class="h">Triển khai (thủ công, Week 1)</text>
 
   <rect x="40" y="760" width="260" height="85" class="box"/>
   <text x="170" y="793" text-anchor="middle" class="t">GitHub repository</text>
   <text x="170" y="818" text-anchor="middle" font-size="13.5" fill="#1f2937">trvannhan/devops-final-task-manager</text>
 
   <rect x="400" y="760" width="320" height="85" class="box"/>
-  <text x="560" y="793" text-anchor="middle" class="t">Deployment directory</text>
+  <text x="560" y="793" text-anchor="middle" class="t">Thư mục triển khai</text>
   <text x="560" y="818" text-anchor="middle" font-size="13.5" fill="#1f2937">/home/vannhan/devops-final-task-manager</text>
   <path d="M300,802 L398,802" class="ln"/>
   <text x="349" y="792" text-anchor="middle" class="l">git clone/pull</text>
 
   <rect x="830" y="710" width="300" height="70" class="box"/>
-  <text x="980" y="740" text-anchor="middle" class="t">Python virtual environment</text>
+  <text x="980" y="740" text-anchor="middle" class="t">Môi trường ảo Python</text>
   <text x="980" y="763" text-anchor="middle" class="s">.venv + requirements.txt</text>
   <path d="M720,785 L828,750" class="ln"/>
   <text x="735" y="745" class="l">pip install</text>
 
   <rect x="830" y="820" width="300" height="80" class="box"/>
-  <text x="980" y="848" text-anchor="middle" class="t">Configuration files</text>
+  <text x="980" y="848" text-anchor="middle" class="t">File cấu hình</text>
   <text x="980" y="868" text-anchor="middle" class="s">scripts/taskmanager.service</text>
   <text x="980" y="888" text-anchor="middle" class="s">scripts/nginx-taskmanager.conf</text>
   <path d="M720,820 L828,855" class="ln"/>
-  <text x="725" y="870" class="l">uses configs</text>
+  <text x="725" y="870" class="l">dùng cấu hình</text>
 
   <rect x="1225" y="790" width="205" height="95" class="box"/>
-  <text x="1327" y="820" text-anchor="middle" class="t">Ubuntu services</text>
+  <text x="1327" y="820" text-anchor="middle" class="t">Dịch vụ Ubuntu</text>
   <text x="1327" y="843" text-anchor="middle" class="s">systemctl enable --now</text>
   <text x="1327" y="864" text-anchor="middle" class="s">taskmanager, nginx</text>
   <path d="M1130,860 L1223,845" class="ln"/>
-  <text x="1136" y="828" class="l">copy to /etc</text>
+  <text x="1136" y="828" class="l">cp → /etc</text>
 
-  <text x="40" y="950" class="n">Admin runs every step over SSH. Week 2 replaces this with Docker Compose + GitHub Actions (self-hosted runner).</text>
+  <text x="40" y="950" class="n">Quản trị viên thực hiện mọi bước qua SSH. Week 2 sẽ thay bằng Docker Compose + GitHub Actions (self-hosted runner).</text>
 </svg>
