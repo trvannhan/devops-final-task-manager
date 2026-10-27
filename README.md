@@ -23,9 +23,9 @@ See [`docs/architecture.md`](docs/architecture.md) and [`docs/architecture.png`]
 ## Server environment
 | Item | Value |
 |------|-------|
-| Hypervisor | VMware, bridged network |
+| Hypervisor | VMware Workstation, NAT network (VMnet8); the Windows host reaches the VM directly |
 | OS | Ubuntu 26.04.1 LTS |
-| CPU / RAM / Disk | 2 vCPU / 3.3 GiB RAM / 35 GB disk (`/dev/sda2`) |
+| CPU / RAM / Disk | 2 vCPU / 4 GB RAM (3.3 GiB usable) / 35 GB disk (`/dev/sda2`) |
 | PostgreSQL | 18.6 (Ubuntu package `18.6-0ubuntu0.26.04.1`) |
 | Python | 3.14.4 |
 | Admin user | `vannhan` (SSH) |

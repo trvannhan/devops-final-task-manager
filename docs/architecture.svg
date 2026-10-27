@@ -39,7 +39,7 @@
 
   <!-- VM boundary -->
   <rect x="345" y="130" width="1075" height="485" rx="10" fill="#fafbfc" stroke="#1f2937" stroke-width="1.8" class="dash"/>
-  <text x="365" y="160" font-size="18" font-weight="800" fill="#111827">Ubuntu 26.04.1 LTS VM · VMware bridged · 2 vCPU · 3.3 GiB RAM · 35 GB disk</text>
+  <text x="365" y="160" font-size="18" font-weight="800" fill="#111827">Ubuntu 26.04.1 LTS VM · VMware NAT (VMnet8) · 2 vCPU · 4 GB RAM · 35 GB disk</text>
 
   <!-- systemd + env -->
   <rect x="690" y="180" width="280" height="60" class="box"/>

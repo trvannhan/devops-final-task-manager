@@ -8,7 +8,7 @@ Editable source: [`architecture.svg`](architecture.svg).
 Windows browser (client)
         | HTTP :8080
         v
-Ubuntu 26.04.1 VM (VMware, bridged network)
+Ubuntu 26.04.1 VM (VMware NAT network, VMnet8)
   Nginx :8080 (public VM interface, reverse proxy)
         | proxy_pass
         v
