@@ -1,4 +1,14 @@
-# Kiến trúc triển khai Week 1
+# Kiến trúc triển khai
+
+## Week 2: Docker Compose + CI/CD
+
+![Sơ đồ kiến trúc Week 2](architecture-week2.png)
+
+File nguồn: [`architecture-week2.svg`](architecture-week2.svg). Chi tiết pipeline và cách cài đặt: xem README, phần Week 2.
+
+Thay đổi so với Week 1: app và PostgreSQL chạy trong container (Docker Compose); PostgreSQL trên VM và service `taskmanager` (systemd) đã tắt; Nginx :8080 vẫn giữ nguyên và proxy vào container app tại `127.0.0.1:8000`; deploy tự động bằng GitHub Actions qua self-hosted runner.
+
+## Week 1: triển khai thủ công
 
 ![Sơ đồ kiến trúc Task Manager](architecture.png)
 
@@ -24,14 +34,14 @@ GitHub repository -> git clone / git pull thủ công -> /home/vannhan/devops-fi
 SSH :22 (chỉ dành cho quản trị).
 ```
 
-## Luồng request
+### Luồng request
 1. Người dùng mở `http://VM_IP:8080` trên trình duyệt Windows.
 2. UFW cho phép kết nối vào cổng 8080; Nginx nhận request.
 3. Nginx chuyển tiếp (`proxy_pass`) tới Gunicorn/Flask tại `127.0.0.1:8000`.
 4. Flask đọc/ghi bảng `tasks` trong PostgreSQL tại `127.0.0.1:5432`.
 5. Kết quả JSON trả ngược lại qua Nginx về trình duyệt.
 
-## Bảng cổng
+### Bảng cổng
 | Cổng | Dịch vụ | Lắng nghe trên | Mở trong UFW |
 |------|---------|----------------|--------------|
 | 22   | SSH (quản trị) | mọi interface | có |
@@ -42,5 +52,5 @@ SSH :22 (chỉ dành cho quản trị).
 
 Cổng 8000 và 5432 chỉ gắn với localhost, nên client chỉ có thể truy cập ứng dụng thông qua Nginx ở cổng 8080.
 
-## Ghi chú về mạng NAT
+### Ghi chú về mạng NAT
 VM dùng mạng NAT của VMware (VMnet8) nên có IP riêng trong mạng ảo. Máy Windows chạy VMware truy cập trực tiếp được vào VM. Nếu muốn máy khác trong mạng LAN truy cập, cần chuyển sang chế độ Bridged hoặc cấu hình port forwarding trong Virtual Network Editor.

@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="1030" viewBox="0 0 1460 1030" font-family="Inter, DejaVu Sans, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2937"/>
+    </marker>
+    <style>
+      .box{fill:#eef2f7;stroke:#1f2937;stroke-width:1.6}
+      .key{fill:#dff3ea;stroke:#1f2937;stroke-width:1.8}
+      .gh{fill:#e7eefb;stroke:#1f2937;stroke-width:1.6}
+      .t{font-size:17px;font-weight:700;fill:#111827}
+      .s{font-size:14px;fill:#1f2937}
+      .l{font-size:14px;fill:#111827}
+      .n{font-size:15px;fill:#1f2937}
+      .h{font-size:24px;font-weight:800;fill:#111827}
+      .ln{stroke:#1f2937;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .dash{stroke-dasharray:6 5}
+    </style>
+  </defs>
+  <rect width="1460" height="1030" fill="#ffffff"/>
+
+  <text x="730" y="48" text-anchor="middle" font-size="30" font-weight="800" fill="#111827">DevOps Final Project – Kiến trúc Task Manager (Week 2: Docker + CI/CD)</text>
+
+  <!-- ===== Panel 1: CI/CD ===== -->
+  <rect x="20" y="75" width="1420" height="400" fill="none" stroke="#1f2937" stroke-width="1.4"/>
+  <text x="40" y="110" class="h">CI/CD: từ commit tới production</text>
+
+  <rect x="40" y="175" width="190" height="80" class="box"/>
+  <text x="135" y="208" text-anchor="middle" class="t">Developer</text>
+  <text x="135" y="231" text-anchor="middle" class="s">Nhân · Lực · Long</text>
+
+  <rect x="290" y="175" width="200" height="80" class="box"/>
+  <text x="390" y="208" text-anchor="middle" class="t">GitHub repository</text>
+  <text x="390" y="231" text-anchor="middle" class="s">nhánh main / Pull Request</text>
+  <path d="M230,215 L288,215" class="ln"/>
+  <text x="259" y="205" text-anchor="middle" class="l">push</text>
+
+  <!-- Actions region -->
+  <rect x="545" y="125" width="635" height="190" rx="10" fill="#fafbfc" stroke="#1f2937" stroke-width="1.6" class="dash"/>
+  <text x="565" y="152" font-size="16" font-weight="800" fill="#111827">GitHub Actions (ci-cd.yml)</text>
+  <path d="M490,215 L572,215" class="ln"/>
+  <text x="531" y="205" text-anchor="middle" class="l">kích hoạt</text>
+
+  <rect x="575" y="170" width="175" height="115" class="key"/>
+  <text x="662" y="198" text-anchor="middle" class="t">1. Test</text>
+  <text x="662" y="221" text-anchor="middle" class="s">ubuntu-latest</text>
+  <text x="662" y="241" text-anchor="middle" class="s">+ PostgreSQL 18 tạm</text>
+  <text x="662" y="261" text-anchor="middle" class="s">pytest: 6 test</text>
+
+  <rect x="785" y="170" width="175" height="115" class="key"/>
+  <text x="872" y="198" text-anchor="middle" class="t">2. Build &amp; push</text>
+  <text x="872" y="221" text-anchor="middle" class="s">docker build</text>
+  <text x="872" y="241" text-anchor="middle" class="s">tag = mã commit</text>
+  <text x="872" y="261" text-anchor="middle" class="s">chỉ chạy trên main</text>
+
+  <rect x="995" y="170" width="165" height="115" class="key"/>
+  <text x="1077" y="198" text-anchor="middle" class="t">3. Deploy</text>
+  <text x="1077" y="221" text-anchor="middle" class="s">runs-on:</text>
+  <text x="1077" y="241" text-anchor="middle" class="s">self-hosted</text>
+  <text x="1077" y="261" text-anchor="middle" class="s">+ smoke test</text>
+
+  <path d="M750,227 L783,227" class="ln"/>
+  <path d="M960,227 L993,227" class="ln"/>
+  <text x="575" y="305" font-size="13.5" font-weight="700" fill="#9b2c1f">Test lỗi → pipeline dừng, không build, không deploy</text>
+
+  <rect x="1225" y="170" width="200" height="115" class="gh"/>
+  <text x="1325" y="200" text-anchor="middle" class="t">Container Registry</text>
+  <text x="1325" y="224" text-anchor="middle" class="s">ghcr.io/trvannhan/</text>
+  <text x="1325" y="244" text-anchor="middle" class="s">devops-final-task-manager</text>
+  <text x="1325" y="264" text-anchor="middle" class="s">:&lt;mã commit&gt;</text>
+  <path d="M872,170 L872,140 L1300,140 L1300,168" class="ln"/>
+  <text x="1240" y="132" text-anchor="middle" class="l">push image</text>
+
+  <rect x="575" y="360" width="250" height="70" class="gh"/>
+  <text x="700" y="390" text-anchor="middle" class="t">GitHub Secrets</text>
+  <text x="700" y="413" text-anchor="middle" class="s">POSTGRES_PASSWORD</text>
+  <path d="M825,395 L1040,395 L1040,287" class="ln"/>
+  <text x="930" y="385" text-anchor="middle" class="l">ghi ra .env khi deploy</text>
+
+  <!-- ===== Panel 2: VM ===== -->
+  <rect x="20" y="495" width="1420" height="515" fill="none" stroke="#1f2937" stroke-width="1.4"/>
+  <text x="40" y="530" class="h">Vận hành trên máy ảo</text>
+
+  <text x="40" y="700" class="s" font-weight="700">Máy host Windows</text>
+  <rect x="40" y="720" width="190" height="80" class="box"/>
+  <text x="135" y="753" text-anchor="middle" class="t">Trình duyệt</text>
+  <text x="135" y="776" text-anchor="middle" class="s">Người dùng</text>
+
+  <rect x="255" y="560" width="32" height="420" fill="#f6d5cf" stroke="#9b2c1f" stroke-width="1.6"/>
+  <text transform="translate(276 770) rotate(-90)" text-anchor="middle" font-size="15" font-weight="800" fill="#7a1f14">UFW · cho phép 22, 8080</text>
+
+  <rect x="305" y="550" width="1115" height="440" rx="10" fill="#fafbfc" stroke="#1f2937" stroke-width="1.8" class="dash"/>
+  <text x="325" y="580" font-size="17" font-weight="800" fill="#111827">VM Ubuntu 26.04.1 LTS · VMware NAT (VMnet8) · Docker 29 + Compose v2</text>
+
+  <!-- runner + deploy dir -->
+  <rect x="930" y="600" width="230" height="75" class="box"/>
+  <text x="1045" y="630" text-anchor="middle" class="t">Self-hosted runner</text>
+  <text x="1045" y="653" text-anchor="middle" class="s">service, user vannhan</text>
+  <path d="M1060,598 L1060,289" class="ln dash"/>
+  <text x="1070" y="457" class="l">nhận job qua HTTPS (đi ra)</text>
+
+  <rect x="1190" y="600" width="210" height="75" class="box"/>
+  <text x="1295" y="630" text-anchor="middle" class="t">/opt/taskmanager</text>
+  <text x="1295" y="653" text-anchor="middle" class="s">compose + .env (600)</text>
+  <path d="M1325,285 L1325,598" class="ln"/>
+  <text x="1335" y="345" class="l">pull image</text>
+  <path d="M1160,637 L1188,637" class="ln"/>
+
+  <!-- Nginx -->
+  <rect x="325" y="725" width="185" height="80" class="key"/>
+  <text x="417" y="758" text-anchor="middle" class="t">Nginx :8080</text>
+  <text x="417" y="781" text-anchor="middle" class="s">reverse proxy (host)</text>
+  <path d="M230,760 L323,762" class="ln"/>
+  <text x="140" y="830" text-anchor="middle" class="l" font-weight="700">HTTP → VM_IP:8080</text>
+
+  <!-- Compose region -->
+  <rect x="560" y="700" width="845" height="160" rx="8" fill="#ffffff" stroke="#1f6f54" stroke-width="1.6" class="dash"/>
+  <text x="575" y="722" font-size="14.5" font-weight="800" fill="#1f6f54">Docker Compose project "taskmanager" · network backend</text>
+  <path d="M1045,675 L1045,698" class="ln"/>
+  <text x="1055" y="692" class="l">docker compose pull + up -d</text>
+
+  <rect x="580" y="740" width="320" height="100" class="key"/>
+  <text x="740" y="770" text-anchor="middle" class="t">container app</text>
+  <text x="740" y="793" text-anchor="middle" class="s">Gunicorn + Flask · user không root</text>
+  <text x="740" y="815" text-anchor="middle" class="s">127.0.0.1:8000 · HEALTHCHECK</text>
+  <path d="M510,765 L578,778" class="ln"/>
+  <text x="545" y="755" text-anchor="middle" class="l">proxy</text>
+
+  <rect x="1030" y="740" width="250" height="100" class="key"/>
+  <text x="1155" y="770" text-anchor="middle" class="t">container db</text>
+  <text x="1155" y="793" text-anchor="middle" class="s">postgres:18 · taskdb</text>
+  <text x="1155" y="815" text-anchor="middle" class="s">5432 chỉ trong network</text>
+  <path d="M900,790 L1028,790" class="ln"/>
+  <text x="964" y="780" text-anchor="middle" class="l">db:5432</text>
+
+  <g>
+    <path d="M1045,905 L1045,955 A110,15 0 0 0 1265,955 L1265,905" fill="#eef2f7" stroke="#1f2937" stroke-width="1.6"/>
+    <ellipse cx="1155" cy="905" rx="110" ry="15" fill="#e3e9f1" stroke="#1f2937" stroke-width="1.6"/>
+    <text x="1155" y="940" text-anchor="middle" class="t">Volume pgdata</text>
+    <text x="1155" y="962" text-anchor="middle" class="s">dữ liệu bền vững</text>
+  </g>
+  <path d="M1155,840 L1155,888" class="ln"/>
+
+  <text x="325" y="900" class="n"><tspan font-weight="700">Smoke test:</tspan> job Deploy gọi http://127.0.0.1:8080/health,</text>
+  <text x="325" y="922" class="n">phải trả "version" đúng mã commit mới, sai thì job báo đỏ.</text>
+  <text x="325" y="955" class="n"><tspan font-weight="700">Xóa container</tspan> (docker compose down) không mất dữ liệu: volume vẫn giữ.</text>
+</svg>

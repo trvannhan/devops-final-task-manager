@@ -18,7 +18,7 @@
 
 ## Kiến trúc
 Trình duyệt -> Nginx trên VM (`:8080`) -> Gunicorn/Flask (`127.0.0.1:8000`) -> PostgreSQL (`127.0.0.1:5432`) -> ổ đĩa VM.
-Xem chi tiết tại [`docs/architecture.md`](docs/architecture.md) và [`docs/architecture.png`](docs/architecture.png).
+Xem chi tiết tại [`docs/architecture.md`](docs/architecture.md). Sơ đồ Week 1 bên dưới; sơ đồ Week 2 (Docker + CI/CD) ở [phần Week 2](#kiến-trúc-week-2).
 
 ![Sơ đồ kiến trúc](docs/architecture.png)
 
@@ -134,17 +134,13 @@ Trên trình duyệt Windows, mở `http://<VM_IP>:8080/` (thay `<VM_IP>` bằng
 ## Week 2: Docker Compose và CI/CD
 
 ### Kiến trúc Week 2
-```text
-Developer --git push--> GitHub
-                          |
-                  GitHub Actions (.github/workflows/ci-cd.yml)
-                    1. test   : ubuntu-latest + PostgreSQL 18 tạm -> pytest (unit + tích hợp)
-                    2. build  : build Docker image -> ghcr.io/trvannhan/devops-final-task-manager:<commit>
-                    3. deploy : self-hosted runner trong VM -> docker compose pull + up -d -> smoke test
-                          |
-VM Ubuntu (NAT): Nginx :8080 (giữ từ Week 1) -> container app 127.0.0.1:8000 -> container db (volume taskmanager_pgdata)
-```
-VM dùng mạng NAT, không có IP public, nên GitHub không thể SSH vào VM. Thay vào đó, **self-hosted runner** chạy trong VM tự kết nối ra GitHub để nhận job deploy, không cần mở thêm cổng nào.
+![Kiến trúc Week 2](docs/architecture-week2.png)
+
+- **CI/CD:** mỗi commit lên `main` chạy 3 job: *Test* (máy GitHub, có PostgreSQL 18 tạm, 6 test) → *Build & push* (image gắn tag mã commit, đẩy lên `ghcr.io`) → *Deploy* (self-hosted runner trong VM kéo image mới, `docker compose up -d`, rồi smoke test `/health`). Test lỗi thì pipeline dừng; Pull Request chỉ chạy Test.
+- **Vận hành:** Trình duyệt → UFW → Nginx `:8080` trên VM (giữ từ Week 1) → container `app` (`127.0.0.1:8000`) → container `db` (PostgreSQL 18, chỉ trong network `backend`) → volume `pgdata`.
+- **Vì sao dùng self-hosted runner:** VM dùng mạng NAT, không có IP public, nên GitHub không thể SSH vào VM. Runner chạy trong VM tự kết nối ra GitHub qua HTTPS để nhận job deploy, không cần mở thêm cổng nào.
+
+File nguồn sơ đồ có thể chỉnh sửa: [`docs/architecture-week2.svg`](docs/architecture-week2.svg).
 
 ### Các file của Week 2
 | File | Vai trò |
