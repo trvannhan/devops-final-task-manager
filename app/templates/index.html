@@ -1,1 +1,82 @@
-<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DevOps Task Manager</title><link rel="stylesheet" href="/static/style.css"></head><body><main class="shell"><header><div class="brand">◎ DEVOPS LAB <span>2026</span></div><span class="tag">WEEK 01 · FLASK + POSTGRESQL</span></header><section class="hero"><div><p class="eyebrow">YOUR PRODUCTIVITY WORKSPACE</p><h1>Task <em>Manager.</em></h1><p class="subtitle">Quản lý công việc đơn giản, dữ liệu thật trên PostgreSQL — xây dựng để demo DevOps từ Week 1 đến Week 4.</p></div><div class="orb">✓</div></section><section class="metrics"><article><small>TỔNG CÔNG VIỆC</small><strong id="total">0</strong></article><article><small>ĐANG THỰC HIỆN</small><strong id="pending">0</strong></article><article><small>ĐÃ HOÀN THÀNH</small><strong id="completed">0</strong></article></section><section class="panel"><div class="panel-head"><div><h2>Thêm công việc</h2><p>Tạo task mới và lưu trực tiếp vào database.</p></div><span class="step">01 / CREATE</span></div><form id="taskForm"><div class="fields"><label>TÊN CÔNG VIỆC<input id="title" maxlength="200" required placeholder="Ví dụ: Hoàn thành DevOps Week 1"></label><label>MÔ TẢ (TÙY CHỌN)<input id="description" maxlength="1000" placeholder="Ghi chú công việc"></label></div><button type="submit" id="addBtn">+ Thêm công việc</button></form></section><section class="panel"><div class="panel-head"><div><h2>Danh sách công việc</h2><p>Đánh dấu hoàn thành hoặc xóa task. Tải lại trang để kiểm tra persistence.</p></div><span class="step">02 / READ · UPDATE · DELETE</span></div><div id="notice" role="status"></div><div id="taskList" class="task-list"><div class="empty">Đang tải dữ liệu...</div></div></section><footer><span>DEVOPS FINAL PROJECT 2026</span><span id="health">● Kiểm tra kết nối...</span></footer></main><script src="/static/app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>DevOps Task Manager</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="brand">◎ DEVOPS LAB <span>2026</span></div>
+        <span class="tag">WEEK 01 · FLASK + POSTGRESQL</span>
+      </header>
+
+      <section class="hero">
+        <div>
+          <p class="eyebrow">YOUR PRODUCTIVITY WORKSPACE</p>
+          <h1>Task <em>Manager.</em></h1>
+          <p class="subtitle">Quản lý công việc đơn giản, dữ liệu thật trên PostgreSQL — xây dựng để demo DevOps từ Week 1 đến Week 4.</p>
+        </div>
+        <div class="orb">✓</div>
+      </section>
+
+      <section class="metrics">
+        <article>
+          <small>TỔNG CÔNG VIỆC</small>
+          <strong id="total">0</strong>
+        </article>
+        <article>
+          <small>ĐANG THỰC HIỆN</small>
+          <strong id="pending">0</strong>
+        </article>
+        <article>
+          <small>ĐÃ HOÀN THÀNH</small>
+          <strong id="completed">0</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Thêm công việc</h2>
+            <p>Tạo task mới và lưu trực tiếp vào database.</p>
+          </div>
+          <span class="step">01 / CREATE</span>
+        </div>
+        <form id="taskForm">
+          <div class="fields">
+            <label>TÊN CÔNG VIỆC
+              <input id="title" maxlength="200" required placeholder="Ví dụ: Hoàn thành DevOps Week 1">
+            </label>
+            <label>MÔ TẢ (TÙY CHỌN)
+              <input id="description" maxlength="1000" placeholder="Ghi chú công việc">
+            </label>
+          </div>
+          <button type="submit" id="addBtn">+ Thêm công việc</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Danh sách công việc</h2>
+            <p>Đánh dấu hoàn thành hoặc xóa task. Tải lại trang để kiểm tra persistence.</p>
+          </div>
+          <span class="step">02 / READ · UPDATE · DELETE</span>
+        </div>
+        <div id="notice" role="status"></div>
+        <div id="taskList" class="task-list">
+          <div class="empty">Đang tải dữ liệu...</div>
+        </div>
+      </section>
+
+      <footer>
+        <span>DEVOPS FINAL PROJECT 2026</span>
+        <span id="health">● Kiểm tra kết nối...</span>
+      </footer>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

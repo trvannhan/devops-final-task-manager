@@ -4,6 +4,7 @@ Cần biến môi trường TEST_DATABASE_URL trỏ tới một database dùng r
 (bảng tasks sẽ bị xóa sạch). Trên máy cá nhân nếu không đặt biến này thì các test
 được bỏ qua; trong GitHub Actions (CI=true) thiếu biến này sẽ làm test thất bại.
 """
+
 import os
 import pathlib
 
@@ -38,7 +39,9 @@ def test_health_reports_database_connected(client):
 
 
 def test_task_crud_roundtrip(client):
-    created = client.post("/api/tasks", json={"title": "  CI task  ", "description": "from pytest"})
+    created = client.post(
+        "/api/tasks", json={"title": "  CI task  ", "description": "from pytest"}
+    )
     assert created.status_code == 201
     task = created.get_json()
     assert task["title"] == "CI task"
@@ -53,11 +56,16 @@ def test_task_crud_roundtrip(client):
 
     assert client.delete(f"/api/tasks/{task['id']}").status_code == 204
     assert client.get("/api/tasks").get_json() == []
-    assert client.patch(f"/api/tasks/{task['id']}", json={"completed": False}).status_code == 404
+    assert (
+        client.patch(f"/api/tasks/{task['id']}", json={"completed": False}).status_code
+        == 404
+    )
 
 
 def test_created_task_is_stored_in_postgresql(client):
     task = client.post("/api/tasks", json={"title": "Persisted"}).get_json()
     with psycopg.connect(TEST_DB) as conn:
-        row = conn.execute("SELECT title, completed FROM tasks WHERE id = %s", (task["id"],)).fetchone()
+        row = conn.execute(
+            "SELECT title, completed FROM tasks WHERE id = %s", (task["id"],)
+        ).fetchone()
     assert row == ("Persisted", False)
