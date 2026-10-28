@@ -220,10 +220,10 @@ docker compose exec db psql -U taskapp -d taskdb -c 'SELECT id,title,completed F
 - [x] `Dockerfile` + `docker-compose.yml`
 - [x] Workflow `.github/workflows/ci-cd.yml`
 - [x] Test source (`tests/`)
-- [ ] Ảnh/log workflow chạy xanh và log job deploy
-- [ ] Ảnh `docker compose ps`, volume và dữ liệu còn sau khi tạo lại container
-- [ ] Ảnh/video phiên bản trước và sau khi deploy
-- [ ] Ảnh pipeline fail khi test lỗi
+- [x] Ảnh workflow chạy xanh cả 3 job (`evidence/week2/05`, `06`)
+- [x] Ảnh `docker compose ps`, volume và dữ liệu còn sau khi tạo lại container (`evidence/week2/01`, `04`)
+- [x] Ảnh phiên bản trước (`v1b21dc9`) và sau khi deploy (`v983f55d`) (`evidence/week2/03`, `07`)
+- [x] Ảnh pipeline fail khi test lỗi qua Pull Request (`evidence/week2/08`, `09`)
 
 ## Phân công nhiệm vụ
 | Thành viên | MSSV | Phụ trách | Minh chứng |
