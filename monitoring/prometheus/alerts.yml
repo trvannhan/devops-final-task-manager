@@ -1,0 +1,69 @@
+groups:
+  - name: taskmanager-app
+    rules:
+      - alert: AppDownViaNginx
+        expr: probe_success{job="health", via="nginx"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Web Task Manager không truy cập được qua Nginx :8080"
+          description: "/health qua Nginx thất bại hơn 30 giây. So sánh với AppContainerDown để biết lỗi ở Nginx hay ở app."
+
+      - alert: AppContainerDown
+        expr: probe_success{job="health", via="app"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container app không trả lời /health"
+          description: "Gọi thẳng http://app:8000/health thất bại hơn 30 giây (container dừng, lỗi app hoặc mất kết nối database)."
+
+      - alert: HealthCheckSlow
+        expr: probe_duration_seconds{job="health", via="nginx"} > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "/health phản hồi chậm hơn 1 giây"
+          description: "Thời gian phản hồi hiện tại {{ $value | humanizeDuration }}."
+
+  - name: taskmanager-host
+    rules:
+      - alert: HostHighCpu
+        expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m]))) > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU của VM trên 85%"
+          description: "CPU đang dùng {{ $value | printf \"%.0f\" }}% trong hơn 2 phút."
+
+      - alert: HostHighMemory
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAM của VM trên 90%"
+          description: "RAM đang dùng {{ $value | printf \"%.0f\" }}%."
+
+      - alert: HostDiskAlmostFull
+        expr: 100 * (1 - node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay"}) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ổ đĩa / của VM đã dùng trên 85%"
+          description: "Đã dùng {{ $value | printf \"%.0f\" }}%. Kiểm tra backups/ và docker image cũ."
+
+  - name: taskmanager-backup
+    rules:
+      - alert: BackupTooOld
+        expr: time() - taskmanager_backup_last_success_timestamp_seconds > 26 * 3600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Chưa có backup database thành công trong 26 giờ"
+          description: "Backup tự động chạy lúc 02:00 mỗi ngày. Xem backups/backup.log."

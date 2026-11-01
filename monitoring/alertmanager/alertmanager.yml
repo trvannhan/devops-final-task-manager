@@ -1,0 +1,17 @@
+# Alertmanager: nhận cảnh báo từ Prometheus, gom nhóm và hiển thị tại http://127.0.0.1:9093
+# Receiver "web-ui" không gửi đi đâu: trạng thái cảnh báo xem trên giao diện Alertmanager và Grafana.
+# Muốn nhận thông báo qua email/Telegram/Discord thì thêm cấu hình vào receiver này.
+route:
+  receiver: web-ui
+  group_by: [alertname]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 4h
+
+receivers:
+  - name: web-ui
+
+inhibit_rules:
+  # Khi container app đã báo chết thì không báo thêm AppDownViaNginx (cùng một nguyên nhân)
+  - source_matchers: [alertname="AppContainerDown"]
+    target_matchers: [alertname="AppDownViaNginx"]

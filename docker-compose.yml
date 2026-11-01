@@ -1,9 +1,25 @@
-# Week 2: Task Manager chạy bằng Docker Compose
-# - db : PostgreSQL 18, dữ liệu nằm trong volume "pgdata" (còn nguyên khi xóa/tạo lại container)
-# - app: Flask + Gunicorn, chỉ mở 127.0.0.1:8000 cho Nginx trên VM proxy vào (cổng 8080)
-# Biến môi trường lấy từ file .env (không commit), xem .env.example
+# Task Manager chạy bằng Docker Compose (Week 2 + Week 3)
+#
+# Ứng dụng
+#   db    : PostgreSQL 18, dữ liệu trong volume "pgdata"; chỉ nằm trong network backend
+#   app   : Flask + Gunicorn, mở 127.0.0.1:8000 cho Nginx trên VM proxy vào (cổng 8080)
+#           kết nối DB bằng role taskapp_rw (chỉ có quyền đọc/ghi dữ liệu)
+# Giám sát (Week 3) - mọi cổng chỉ mở trên 127.0.0.1, xem từ Windows qua SSH tunnel
+#   prometheus   : thu thập số liệu, đánh giá luật cảnh báo        127.0.0.1:9090
+#   alertmanager : nhận và hiển thị cảnh báo                       127.0.0.1:9093
+#   grafana      : dashboard                                       127.0.0.1:3000
+#   node-exporter: CPU, RAM, disk của VM + số liệu backup
+#   blackbox     : gọi /health qua Nginx và gọi thẳng container app
+#
+# Biến môi trường lấy từ file .env (do pipeline tạo từ GitHub Secrets, không commit), xem .env.example
 
 name: taskmanager
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   db:
@@ -25,6 +41,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    logging: *default-logging
 
   app:
     image: ${APP_IMAGE:-ghcr.io/trvannhan/devops-final-task-manager:latest}
@@ -34,7 +51,8 @@ services:
         APP_VERSION: ${APP_VERSION:-dev}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://taskapp:${POSTGRES_PASSWORD}@db:5432/taskdb
+      # Role taskapp_rw chỉ có SELECT/INSERT/UPDATE/DELETE trên bảng tasks (scripts/db-roles.sql)
+      DATABASE_URL: postgresql://taskapp_rw:${APP_DB_PASSWORD:?APP_DB_PASSWORD chưa được đặt}@db:5432/taskdb
     depends_on:
       db:
         condition: service_healthy
@@ -43,9 +61,103 @@ services:
       - "127.0.0.1:8000:8000"
     networks:
       - backend
+      - monitoring
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - monitoring
+    mem_limit: 512m
+    logging: *default-logging
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    networks:
+      - monitoring
+    mem_limit: 128m
+    logging: *default-logging
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/textfile
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+      # backup.sh ghi file backup.prom vào đây (thời điểm backup gần nhất)
+      - ./backups/metrics:/textfile:ro
+    networks:
+      - monitoring
+    mem_limit: 64m
+    logging: *default-logging
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.27.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./monitoring/blackbox:/etc/blackbox:ro
+    extra_hosts:
+      # Cho phép container gọi Nginx đang chạy trên VM (cổng 8080)
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring
+    mem_limit: 64m
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD chưa được đặt}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    mem_limit: 256m
+    logging: *default-logging
 
 volumes:
   pgdata:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:
 
 networks:
+  # db chỉ nằm trong backend: các container giám sát không truy cập được database
   backend:
+  monitoring:

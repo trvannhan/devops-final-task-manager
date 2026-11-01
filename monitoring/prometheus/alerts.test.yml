@@ -1,0 +1,68 @@
+# Kiểm thử luật cảnh báo: promtool test rules monitoring/prometheus/alerts.test.yml
+# Chạy tự động trong job Test của GitHub Actions.
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 15s
+
+tests:
+  # App chết 1 phút -> AppContainerDown bật sau 30 giây
+  - interval: 15s
+    input_series:
+      - series: 'probe_success{job="health", via="app", instance="http://app:8000/health"}'
+        values: "1 1 0 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: AppContainerDown
+        exp_alerts: []
+      - eval_time: 75s
+        alertname: AppContainerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: health
+              via: app
+              instance: http://app:8000/health
+            exp_annotations:
+              summary: "Container app không trả lời /health"
+              description: "Gọi thẳng http://app:8000/health thất bại hơn 30 giây (container dừng, lỗi app hoặc mất kết nối database)."
+
+  # Lỗi chỉ trong 15 giây (chập chờn) -> không báo động
+  - interval: 15s
+    input_series:
+      - series: 'probe_success{job="health", via="nginx", instance="http://host.docker.internal:8080/health"}'
+        values: "1 0 1 1 1"
+    alert_rule_test:
+      - eval_time: 60s
+        alertname: AppDownViaNginx
+        exp_alerts: []
+
+  # Backup gần nhất cách đây hơn 26 giờ -> BackupTooOld (sau 10 phút)
+  - interval: 1m
+    input_series:
+      - series: 'taskmanager_backup_last_success_timestamp_seconds{instance="ubuntu-vm", job="node"}'
+        values: "-100000+0x30"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: BackupTooOld
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: BackupTooOld
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: ubuntu-vm
+              job: node
+            exp_annotations:
+              summary: "Chưa có backup database thành công trong 26 giờ"
+              description: "Backup tự động chạy lúc 02:00 mỗi ngày. Xem backups/backup.log."
+
+  # Backup vừa chạy -> không báo
+  - interval: 1m
+    input_series:
+      - series: 'taskmanager_backup_last_success_timestamp_seconds{instance="ubuntu-vm", job="node"}'
+        values: "0+60x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: BackupTooOld
+        exp_alerts: []

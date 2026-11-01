@@ -1,0 +1,50 @@
+# Prometheus: thu thập số liệu mỗi 15 giây và đánh giá luật cảnh báo trong alerts.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # CPU, RAM, disk của VM (và số liệu backup qua textfile collector)
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          instance: ubuntu-vm
+
+  # Kiểm tra /health bằng blackbox exporter theo 2 đường:
+  #   via=nginx : đúng đường người dùng đi (Nginx :8080 -> app), phát hiện cả lỗi proxy
+  #   via=app   : gọi thẳng container app, để phân biệt lỗi Nginx với lỗi app
+  - job_name: health
+    metrics_path: /probe
+    params:
+      module: [http_health]
+    static_configs:
+      - targets: ["http://host.docker.internal:8080/health"]
+        labels:
+          via: nginx
+      - targets: ["http://app:8000/health"]
+        labels:
+          via: app
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  - job_name: blackbox
+    static_configs:
+      - targets: ["blackbox:9115"]

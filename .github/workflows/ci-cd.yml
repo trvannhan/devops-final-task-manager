@@ -1,5 +1,6 @@
-# Week 2 - CI/CD: checkout -> test -> build image -> deploy
-#   test   : chạy trên máy GitHub, có PostgreSQL tạm để chạy test tích hợp
+# CI/CD: checkout -> test -> build image -> deploy
+#   test   : chạy trên máy GitHub, có PostgreSQL tạm để chạy test tích hợp,
+#            kiểm tra cấu hình Docker Compose, Prometheus, luật cảnh báo, Alertmanager
 #   build  : build Docker image, đẩy lên GitHub Container Registry (ghcr.io)
 #   deploy : chạy trên self-hosted runner cài trong VM Ubuntu (VM dùng NAT, không có IP public)
 name: CI/CD
@@ -48,6 +49,21 @@ jobs:
 
       - name: Run tests (unit + PostgreSQL integration)
         run: python -m pytest -v
+
+      - name: Validate docker-compose.yml
+        run: |
+          POSTGRES_PASSWORD=x APP_DB_PASSWORD=x GRAFANA_ADMIN_PASSWORD=x docker compose config --quiet
+          echo "docker-compose.yml OK"
+
+      - name: Validate monitoring configs and test alert rules
+        run: |
+          docker run --rm -v "$PWD/monitoring/prometheus:/etc/prometheus:ro" --entrypoint promtool \
+            prom/prometheus:v3.5.0 check config /etc/prometheus/prometheus.yml
+          docker run --rm -v "$PWD/monitoring/prometheus:/etc/prometheus:ro" -w /etc/prometheus --entrypoint promtool \
+            prom/prometheus:v3.5.0 test rules alerts.test.yml
+          docker run --rm -v "$PWD/monitoring/alertmanager:/etc/alertmanager:ro" --entrypoint amtool \
+            prom/alertmanager:v0.28.1 check-config /etc/alertmanager/alertmanager.yml
+          python -c "import json; json.load(open('monitoring/grafana/dashboards/taskmanager-overview.json')); print('Grafana dashboard JSON OK')"
 
   build:
     name: Build & push image
@@ -100,28 +116,56 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Copy deploy files to /opt/taskmanager
-        run: cp docker-compose.yml schema.sql "$DEPLOY_DIR"/
+        run: |
+          cp docker-compose.yml schema.sql "$DEPLOY_DIR"/
+          rm -rf "$DEPLOY_DIR/monitoring" "$DEPLOY_DIR/scripts"
+          cp -r monitoring scripts "$DEPLOY_DIR"/
+          chmod +x "$DEPLOY_DIR"/scripts/*.sh
+          mkdir -p "$DEPLOY_DIR/backups/metrics"
+          chmod 700 "$DEPLOY_DIR/backups"
+          chmod 755 "$DEPLOY_DIR/backups/metrics"
 
       - name: Write .env from GitHub Secrets
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          APP_DB_PASSWORD: ${{ secrets.APP_DB_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
-          if [ -z "$POSTGRES_PASSWORD" ]; then
-            echo "::error::Chưa tạo secret POSTGRES_PASSWORD trong GitHub (Settings > Secrets and variables > Actions)"
-            exit 1
-          fi
+          for name in POSTGRES_PASSWORD APP_DB_PASSWORD GRAFANA_ADMIN_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Chưa tạo secret $name trong GitHub (Settings > Secrets and variables > Actions)"
+              exit 1
+            fi
+          done
           umask 077
-          printf 'POSTGRES_PASSWORD=%s\nAPP_IMAGE=%s\n' "$POSTGRES_PASSWORD" "$APP_IMAGE" > "$DEPLOY_DIR/.env"
+          {
+            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
+            echo "APP_DB_PASSWORD=$APP_DB_PASSWORD"
+            echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD"
+            echo "APP_IMAGE=$APP_IMAGE"
+          } > "$DEPLOY_DIR/.env"
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Pull new image and restart containers
+      - name: Pull images, apply DB roles, restart containers
         working-directory: ${{ env.DEPLOY_DIR }}
+        env:
+          APP_DB_PASSWORD: ${{ secrets.APP_DB_PASSWORD }}
         run: |
-          docker compose pull app
+          docker compose pull --quiet
+          docker compose up -d --wait db
+          docker compose exec -T db psql -U taskapp -d taskdb -q -v ON_ERROR_STOP=1 \
+            -v app_password="$APP_DB_PASSWORD" < scripts/db-roles.sql
+          echo "DB roles OK (app dùng taskapp_rw)"
           docker compose up -d --no-build --remove-orphans
           docker compose ps
+
+      - name: Install daily backup cron (02:00)
+        run: |
+          line="0 2 * * * $DEPLOY_DIR/scripts/backup.sh >> $DEPLOY_DIR/backups/backup.log 2>&1 # taskmanager-backup"
+          ( crontab -l 2>/dev/null | grep -v '# taskmanager-backup' || true; echo "$line" ) | crontab -
+          crontab -l | grep taskmanager-backup
 
       - name: Smoke test through Nginx (:8080)
         working-directory: ${{ env.DEPLOY_DIR }}
@@ -137,6 +181,23 @@ jobs:
           done
           echo "::error::App không trả về version $expected sau 60 giây"
           docker compose logs --tail 50 app
+          exit 1
+
+      - name: Check monitoring stack
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:9090/-/ready > /dev/null \
+              && curl -fsS http://127.0.0.1:9093/-/ready > /dev/null \
+              && curl -fsS http://127.0.0.1:3000/api/health > /dev/null; then
+              echo "Prometheus, Alertmanager, Grafana OK"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::Hệ thống giám sát chưa sẵn sàng sau 90 giây"
+          docker compose ps
+          docker compose logs --tail 30 prometheus alertmanager grafana
           exit 1
 
       - name: Clean up

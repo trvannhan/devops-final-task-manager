@@ -5,7 +5,8 @@
 | Tuần | Cách triển khai | Hướng dẫn |
 |------|-----------------|-----------|
 | Week 1 | Thủ công: venv + systemd + PostgreSQL cài trên VM | [Hướng dẫn cài đặt thủ công](#hướng-dẫn-cài-đặt-thủ-công-week-1) |
-| **Week 2** (hiện tại) | Docker Compose + GitHub Actions CI/CD, deploy tự động qua self-hosted runner | [Week 2](#week-2-docker-compose-và-cicd) |
+| Week 2 | Docker Compose + GitHub Actions CI/CD, deploy tự động qua self-hosted runner | [Week 2](#week-2-docker-compose-và-cicd) |
+| **Week 3** (hiện tại) | Giám sát (Prometheus, Grafana, Alertmanager), bảo mật, backup/restore, playbook | [Week 3](#week-3-giám-sát-bảo-mật-và-backup) |
 
 ## Nguồn code và phạm vi
 - Nguồn: mã nguồn ứng dụng được viết với sự hỗ trợ của trợ lý AI, sau đó nhóm review, kiểm thử và triển khai. Không sao chép template từ dự án bên thứ ba.
@@ -221,6 +222,72 @@ docker compose exec db psql -U taskapp -d taskdb -c 'SELECT id,title,completed F
 - [x] Ảnh phiên bản trước (`v1b21dc9`) và sau khi deploy (`v983f55d`) (`evidence/week2/03`, `07`)
 - [x] Ảnh pipeline fail khi test lỗi qua Pull Request (`evidence/week2/08`, `09`)
 
+## Week 3: Giám sát, bảo mật và backup
+
+### Tổng quan
+| Yêu cầu | Cách làm | File |
+|---------|----------|------|
+| Giám sát CPU, RAM, health | node-exporter (CPU/RAM/disk VM) + blackbox (gọi `/health` qua Nginx và thẳng container app) → Prometheus → Grafana | `monitoring/` |
+| Dashboard + cảnh báo | Dashboard *Task Manager – Tổng quan hệ thống*; 7 luật cảnh báo, có unit test (`promtool test rules`) chạy trong CI | `monitoring/grafana/`, `monitoring/prometheus/alerts*.yml` |
+| Log ứng dụng | Gunicorn ghi access log ra stdout, Docker lưu json-file (giới hạn 10 MB x 3 file mỗi container) | `docker-compose.yml` |
+| Firewall, cổng | UFW chỉ mở 22, 8080 (80 là project khác); mọi cổng giám sát chỉ trên 127.0.0.1 | [`docs/security.md`](docs/security.md) |
+| Secrets | GitHub Secrets → `.env` quyền 600, không có mật khẩu trong Git | [`docs/security.md`](docs/security.md) |
+| Phân quyền DB | App dùng role `taskapp_rw` chỉ có SELECT/INSERT/UPDATE/DELETE | `scripts/db-roles.sql` |
+| Backup | `pg_dump` hằng ngày 02:00 (cron), giữ 7 ngày, kiểm tra sha256, cảnh báo nếu quá 26 giờ chưa backup | `scripts/backup.sh` |
+| Restore | Kiểm tra sha256 → lưu trạng thái hiện tại → dừng app → `pg_restore` trong 1 transaction → chạy lại app | `scripts/restore.sh` |
+| Xử lý sự cố | 7 sự cố (3 đã xảy ra thật) | [`docs/playbook.md`](docs/playbook.md) |
+
+### Cài đặt (làm một lần)
+1. Tạo thêm 2 secret trong **Settings → Secrets and variables → Actions** (chỉ chữ và số, ví dụ `openssl rand -hex 16`):
+   - `APP_DB_PASSWORD`: mật khẩu role `taskapp_rw` của ứng dụng
+   - `GRAFANA_ADMIN_PASSWORD`: mật khẩu đăng nhập Grafana (user `admin`)
+2. Push lên `main` (hoặc **Actions → CI/CD → Run workflow**). Pipeline tự: copy cấu hình giám sát và script, tạo `.env`, áp dụng phân quyền DB, chạy toàn bộ container, cài cron backup 02:00, kiểm tra Prometheus/Alertmanager/Grafana.
+
+### Xem dashboard từ Windows (SSH tunnel)
+Các cổng giám sát không mở ra ngoài. Trên PowerShell của Windows chạy (để cửa sổ này mở trong lúc xem):
+```powershell
+ssh -N -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 -L 9093:127.0.0.1:9093 vannhan@<VM_IP>
+```
+Rồi mở trên trình duyệt Windows:
+- Grafana: http://localhost:3000 (user `admin`) → *Dashboards → Task Manager → Task Manager – Tổng quan hệ thống*
+- Prometheus: http://localhost:9090 (*Alerts*, *Status → Targets*)
+- Alertmanager: http://localhost:9093
+
+### Kiểm tra cảnh báo
+```bash
+cd /opt/taskmanager
+docker compose stop app      # sau 30-45 giây: AppContainerDown bật (Prometheus Alerts, Alertmanager, Grafana)
+docker compose start app     # sau 15-30 giây: cảnh báo tự hết
+```
+
+### Tra cứu log theo thời gian
+```bash
+cd /opt/taskmanager
+docker compose logs --timestamps --since 30m app                      # 30 phút gần nhất
+docker compose logs --timestamps --since 2026-11-05T14:00:00 --until 2026-11-05T14:15:00 app
+docker compose logs --since 1h app | grep -E '" (4|5)[0-9]{2} '       # chỉ request lỗi 4xx/5xx
+docker compose logs --since 1h app | grep -iE 'error|exception'        # lỗi của ứng dụng
+sudo tail -n 50 /var/log/nginx/error.log                              # lỗi phía Nginx
+```
+
+### Backup và restore
+```bash
+bash /opt/taskmanager/scripts/backup.sh                     # backup ngay
+ls -lh /opt/taskmanager/backups/                            # các bản backup + .sha256
+tail -n 20 /opt/taskmanager/backups/backup.log              # log của backup tự động
+crontab -l | grep taskmanager-backup                        # lịch 02:00 hằng ngày
+bash /opt/taskmanager/scripts/restore.sh                    # liệt kê bản backup
+bash /opt/taskmanager/scripts/restore.sh /opt/taskmanager/backups/taskdb-YYYYMMDD-HHMMSS.dump
+```
+Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (bản `pre-restore-*` tạo trước mỗi lần restore cũng giữ 7 ngày); thư mục `backups/` quyền 700. Nên chép định kỳ một bản ra ngoài VM (ví dụ `scp` về máy Windows) để phòng mất cả VM.
+
+### Hồ sơ nộp Week 3
+- [x] Cấu hình dashboard, cảnh báo: `monitoring/`
+- [x] Security/ports checklist: [`docs/security.md`](docs/security.md)
+- [x] Backup và restore scripts: `scripts/backup.sh`, `scripts/restore.sh`
+- [x] Incident playbook: [`docs/playbook.md`](docs/playbook.md)
+- [ ] Ảnh dashboard, cảnh báo đang bật/đã hết, log backup/restore (`evidence/week3/`)
+
 ## Phân công nhiệm vụ
 | Thành viên | MSSV | Phụ trách | Minh chứng |
 |------------|------|-----------|------------|
@@ -229,5 +296,4 @@ docker compose exec db psql -U taskapp -d taskdb -c 'SELECT id,title,completed F
 | Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
 
 ## Các tuần tiếp theo
-- Week 3: giám sát (metrics, dashboard, cảnh báo), firewall/secrets, backup/restore.
 - Week 4: demo toàn hệ thống, troubleshooting playbook và báo cáo kỹ thuật.
