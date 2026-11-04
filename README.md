@@ -287,7 +287,7 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Backup và restore scripts: `scripts/backup.sh`, `scripts/restore.sh`
 - [x] Incident playbook: [`docs/playbook.md`](docs/playbook.md)
 - [x] Ảnh minh chứng giám sát và cảnh báo: dashboard lúc bình thường và lúc sự cố, Prometheus/Alertmanager lúc cảnh báo bật và đã tắt (`evidence/week3/01`–`08`, mô tả trong `evidence/week3/README.md`)
-- [ ] Ảnh log backup/restore (chưa chụp)
+- [x] Ảnh log backup và restore (`evidence/week3/09`–`10`)
 
 ## Phân công nhiệm vụ
 | Thành viên | MSSV | Phụ trách | Minh chứng |

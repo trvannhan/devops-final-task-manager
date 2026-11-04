@@ -16,3 +16,13 @@ Lưu ý múi giờ: Prometheus hiển thị theo UTC, nên trong ảnh 06 mốc 
 | `08-alertmanager-resolved.png` | Alertmanager không còn cảnh báo đang bật |
 
 Chuỗi sự cố đã kiểm chứng: dừng app → cảnh báo bật (ảnh 03, 04) → khôi phục → cảnh báo tắt (ảnh 07, 08). Ảnh 05 và 06 ghi lại khoảng thời gian có lỗi, trong đó có lỗi xác thực database được xử lý theo playbook mục 3.
+
+## Backup và restore
+
+| File | Chứng minh điều gì |
+|------|--------------------|
+| `09-backup-va-cron.png` | Lịch backup 02:00 đã được cài trong crontab; chạy `backup.sh` tạo bản `taskdb-20261104-120859.dump` (4040 bytes, 8 task) và danh sách backup có 2 bản |
+| `10-restore-thanh-cong.png` | Restore từ bản 120859: kiểm tra sha256 OK, xác nhận gõ YES, lưu trạng thái hiện tại vào `pre-restore-*.dump`, khôi phục xong với 8 task, app chạy lại và `/health` báo `connected` |
+
+Kiểm chứng: thêm task "Test restore" (có 9 task) rồi restore về bản backup → số task về 8, task test biến mất.
+
