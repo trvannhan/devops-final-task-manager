@@ -99,8 +99,17 @@ grep -c '^APP_DB_PASSWORD=' .env                         # có biến (KHÔNG in
 
 **Nguyên nhân**: file `.env` bị sửa tay sai, hoặc đổi secret `APP_DB_PASSWORD` trên GitHub nhưng chưa deploy lại.
 
-**Khắc phục**: không sửa tay `.env`. Chạy lại pipeline để ghi lại `.env` từ GitHub Secrets và đặt lại mật khẩu role cho khớp:
-GitHub → **Actions** → **CI/CD** → **Run workflow** (nhánh `main`). Hoặc nếu biết giá trị đúng, sửa `.env` rồi `docker compose up -d app`.
+**Khắc phục**: đặt lại mật khẩu role `taskapp_rw` theo giá trị đang có trong `.env`, rồi khởi động lại app. Không in giá trị mật khẩu ra màn hình:
+```bash
+cd /opt/taskmanager
+APP_PW="$(grep '^APP_DB_PASSWORD=' .env | cut -d= -f2-)"
+docker compose exec -T db psql -U taskapp -d taskdb -v app_password="$APP_PW" < scripts/db-roles.sql
+unset APP_PW
+docker compose restart app
+sleep 10
+curl -s http://127.0.0.1:8080/health; echo   # "database":"connected"
+```
+Nếu mật khẩu trong `.env` cũng sai (không khớp GitHub Secrets), chạy lại deploy: đẩy một commit mới lên `main` (pipeline sẽ ghi lại `.env` từ Secrets và chạy `db-roles.sql`). Lưu ý: `ci-cd.yml` hiện không có nút chạy thủ công, nên không có mục **Run workflow**.
 
 **Phòng tránh**: `.env` chỉ do pipeline tạo; mỗi lần deploy chạy `scripts/db-roles.sql` đặt lại mật khẩu role theo secret; smoke test chặn deploy hỏng.
 
