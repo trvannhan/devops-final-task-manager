@@ -6,7 +6,7 @@
 |------|-----------------|-----------|
 | Week 1 | Thủ công: venv + systemd + PostgreSQL cài trên VM | [Hướng dẫn cài đặt thủ công](#hướng-dẫn-cài-đặt-thủ-công-week-1) |
 | Week 2 | Docker Compose + GitHub Actions CI/CD, deploy tự động qua self-hosted runner | [Week 2](#week-2-docker-compose-và-cicd) |
-| **Week 3** (hiện tại) | Giám sát (Prometheus, Grafana, Alertmanager), bảo mật, backup/restore, playbook | [Week 3](#week-3-giám-sát-bảo-mật-và-backup) |
+| **Week 3** | Giám sát (Prometheus, Grafana, Alertmanager), bảo mật, backup/restore, playbook | [Week 3](#week-3-giám-sát-bảo-mật-và-backup) |
 
 ## Nguồn code và phạm vi
 - Nguồn: mã nguồn ứng dụng được viết với sự hỗ trợ của trợ lý AI, sau đó nhóm review, kiểm thử và triển khai. Không sao chép template từ dự án bên thứ ba.
@@ -186,7 +186,7 @@ sudo ./svc.sh start
 ```
 Runner hiện trạng thái **Idle** (màu xanh) trong trang *Runners* là được.
 
-**6. Chạy pipeline**: tab *Actions* → *CI/CD* → *Run workflow* (hoặc push một commit lên `main`).
+**6. Chạy pipeline**: push một commit lên `main`. Nếu job bị lỗi hoặc bị hủy, vào tab *Actions* → chọn lượt chạy → **Re-run failed jobs**.
 
 **7. Chuyển dữ liệu Week 1 sang container** (một lần, sau khi deploy đầu tiên thành công):
 ```bash
@@ -241,7 +241,7 @@ docker compose exec db psql -U taskapp -d taskdb -c 'SELECT id,title,completed F
 1. Tạo thêm 2 secret trong **Settings → Secrets and variables → Actions** (chỉ chữ và số, ví dụ `openssl rand -hex 16`):
    - `APP_DB_PASSWORD`: mật khẩu role `taskapp_rw` của ứng dụng
    - `GRAFANA_ADMIN_PASSWORD`: mật khẩu đăng nhập Grafana (user `admin`)
-2. Push lên `main` (hoặc **Actions → CI/CD → Run workflow**). Pipeline tự: copy cấu hình giám sát và script, tạo `.env`, áp dụng phân quyền DB, chạy toàn bộ container, cài cron backup 02:00, kiểm tra Prometheus/Alertmanager/Grafana.
+2. Push lên `main`. Nếu job *Deploy* đỏ vì thiếu secret, tạo đủ secret rồi bấm **Re-run failed jobs**. Pipeline tự: copy cấu hình giám sát và script, tạo `.env`, áp dụng phân quyền DB, chạy toàn bộ container, cài cron backup 02:00, kiểm tra Prometheus/Alertmanager/Grafana.
 
 ### Xem dashboard từ Windows (SSH tunnel)
 Các cổng giám sát không mở ra ngoài. Trên PowerShell của Windows chạy (để cửa sổ này mở trong lúc xem):
@@ -286,7 +286,8 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Security/ports checklist: [`docs/security.md`](docs/security.md)
 - [x] Backup và restore scripts: `scripts/backup.sh`, `scripts/restore.sh`
 - [x] Incident playbook: [`docs/playbook.md`](docs/playbook.md)
-- [ ] Ảnh dashboard, cảnh báo đang bật/đã hết, log backup/restore (`evidence/week3/`)
+- [x] Ảnh minh chứng giám sát và cảnh báo: dashboard lúc bình thường và lúc sự cố, Prometheus/Alertmanager lúc cảnh báo bật và đã tắt (`evidence/week3/01`–`08`, mô tả trong `evidence/week3/README.md`)
+- [ ] Ảnh log backup/restore (chưa chụp)
 
 ## Phân công nhiệm vụ
 | Thành viên | MSSV | Phụ trách | Minh chứng |
