@@ -7,6 +7,9 @@
 | Week 1 | Thủ công: venv + systemd + PostgreSQL cài trên VM | [Hướng dẫn cài đặt thủ công](#hướng-dẫn-cài-đặt-thủ-công-week-1) |
 | Week 2 | Docker Compose + GitHub Actions CI/CD, deploy tự động qua self-hosted runner | [Week 2](#week-2-docker-compose-và-cicd) |
 | **Week 3** | Giám sát (Prometheus, Grafana, Alertmanager), bảo mật, backup/restore, playbook | [Week 3](#week-3-giám-sát-bảo-mật-và-backup) |
+| **Week 4** | Bản final: deployment guide từ máy sạch, sơ đồ final, playbook 8 sự cố, technical report, demo | [Week 4](#week-4-final-demo-và-troubleshooting) |
+
+> **Triển khai mới từ đầu:** làm theo [`docs/deployment-guide.md`](docs/deployment-guide.md) (không cần các bước thủ công của Week 1). Các phần Week 1–3 bên dưới giữ lại làm lịch sử và minh chứng từng checkpoint.
 
 ## Nguồn code và phạm vi
 - Nguồn: mã nguồn ứng dụng được viết với sự hỗ trợ của trợ lý AI, sau đó nhóm review, kiểm thử và triển khai. Không sao chép template từ dự án bên thứ ba.
@@ -18,8 +21,13 @@
 - Dữ liệu lưu trong PostgreSQL (không lưu trên trình duyệt), nên vẫn còn sau khi tải lại trang hoặc khởi động lại máy.
 
 ## Kiến trúc
-Trình duyệt -> Nginx trên VM (`:8080`) -> Gunicorn/Flask (`127.0.0.1:8000`) -> PostgreSQL (`127.0.0.1:5432`) -> ổ đĩa VM.
-Xem chi tiết tại [`docs/architecture.md`](docs/architecture.md). Sơ đồ Week 1 bên dưới; sơ đồ Week 2 (Docker + CI/CD) ở [phần Week 2](#kiến-trúc-week-2).
+Kiến trúc final (Week 4): Trình duyệt → UFW → Nginx `:8080` trên VM → container app (`127.0.0.1:8000`) → container PostgreSQL (volume `pgdata`); GitHub Actions deploy qua self-hosted runner; Prometheus/Grafana/Alertmanager giám sát; cron backup hằng ngày.
+
+![Sơ đồ kiến trúc final](docs/architecture-final.png)
+
+Chi tiết từng lớp và lý do thiết kế: [`docs/architecture.md`](docs/architecture.md). Sơ đồ Week 1 (triển khai thủ công) bên dưới; sơ đồ Week 2 ở [phần Week 2](#kiến-trúc-week-2).
+
+Week 1: Trình duyệt -> Nginx trên VM (`:8080`) -> Gunicorn/Flask (`127.0.0.1:8000`) -> PostgreSQL (`127.0.0.1:5432`) -> ổ đĩa VM.
 
 ![Sơ đồ kiến trúc](docs/architecture.png)
 
@@ -289,12 +297,49 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Ảnh minh chứng giám sát và cảnh báo: dashboard lúc bình thường và lúc sự cố, Prometheus/Alertmanager lúc cảnh báo bật và đã tắt (`evidence/week3/01`–`08`, mô tả trong `evidence/week3/README.md`)
 - [x] Ảnh log backup và restore (`evidence/week3/09`–`10`)
 
+## Week 4: Final demo và troubleshooting
+
+### Tài liệu final
+| Tài liệu | Nội dung |
+|----------|----------|
+| [`docs/deployment-guide.md`](docs/deployment-guide.md) | Dựng lại toàn bộ hệ thống từ Ubuntu sạch: `scripts/bootstrap-vm.sh` → GitHub Secrets → runner → pipeline → kiểm tra |
+| [`scripts/bootstrap-vm.sh`](scripts/bootstrap-vm.sh) | Cài gói, Docker, Nginx `:8080`, UFW (22, 8080), thư mục `/opt/taskmanager`; chạy lại nhiều lần không sao |
+| [`docs/architecture.md`](docs/architecture.md) | Sơ đồ final + lý do thiết kế từng lớp |
+| [`docs/playbook.md`](docs/playbook.md) | 8 sự cố (3 đã xảy ra thật), mỗi mục: triệu chứng → xác minh → nguyên nhân → khắc phục → phòng tránh |
+| [`docs/security.md`](docs/security.md) | Cổng/firewall, secrets, phân quyền DB, container |
+| [`docs/technical-report.md`](docs/technical-report.md) | Báo cáo kỹ thuật theo chuẩn rubric (bản Word: [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx)) |
+
+### Demo end-to-end
+1. **Commit → CI/CD → bản mới**: sửa chữ trong `app/templates/index.html`, push lên `main`; tab *Actions* 3 job xanh; web và `/health` hiện version mới trùng 7 ký tự đầu của commit.
+2. **Giám sát**: Grafana (CPU/RAM, trạng thái `/health` qua Nginx và thẳng app), Prometheus *Targets* đều UP, `docker compose logs`.
+3. **Bảo mật**: `sudo ufw status verbose`, `sudo ss -lntp` (chỉ 22, 8080 mở ra ngoài), `.env` quyền 600, role `taskapp_rw` không `DROP TABLE` được.
+4. **Backup/restore**: `backup.sh` → thêm task thử nghiệm → `restore.sh` → task thử nghiệm biến mất, số task trở về như lúc backup.
+5. **Troubleshooting**: giảng viên chọn lỗi; tra bảng khoanh vùng ở đầu [`docs/playbook.md`](docs/playbook.md).
+
+| Lỗi giảng viên có thể chọn | Playbook |
+|---|---|
+| Container stopped | Mục 1 |
+| Database mất kết nối | Mục 2 |
+| Sai biến môi trường | Mục 3 |
+| Lỗi cấu hình proxy | Mục 4 |
+| Dịch vụ không truy cập được | Mục 8 |
+
+### Hồ sơ nộp Week 4
+- [x] Sơ đồ kiến trúc final: `docs/architecture-final.png` (nguồn `.svg`)
+- [x] Deployment guide từ máy sạch + `scripts/bootstrap-vm.sh`
+- [x] Troubleshooting playbook ≥ 3 sự cố (hiện có 8)
+- [ ] Kiểm thử deployment guide trên VM sạch (ảnh trong `evidence/week4/`)
+- [ ] Ảnh minh chứng end-to-end và troubleshooting (`evidence/week4/`)
+- [x] Technical report 6–10 trang: [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx) (nguồn Markdown: [`docs/technical-report.md`](docs/technical-report.md))
+- [ ] Video demo final 5–10 phút
+- [ ] Release/tag `v1.0.0`
+
 ## Phân công nhiệm vụ
-| Thành viên | MSSV | Phụ trách | Minh chứng |
-|------------|------|-----------|------------|
-| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | ảnh VM, minh chứng API, commit |
-| Trần Văn Lực | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | `ufw status`, trạng thái service, `docs/` |
-| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
+| Thành viên | MSSV | Phụ trách (Week 1–4) | Minh chứng |
+|------------|------|----------------------|------------|
+| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu & SSH, Flask app/API, `Dockerfile`, `docker-compose.yml`, workflow CI/CD, self-hosted runner, `scripts/bootstrap-vm.sh`, `docs/deployment-guide.md` | ảnh VM, minh chứng API/pipeline, commit |
+| Trần Văn Lực | 23090019 | Firewall UFW, Nginx reverse proxy, sơ đồ kiến trúc (`docs/architecture*.svg/png`), Prometheus/Alertmanager/Grafana/Blackbox, kiểm thử cảnh báo, `docs/security.md`, `docs/playbook.md` | `ufw status`, `monitoring/`, ảnh cảnh báo, `docs/` |
+| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL (`schema.sql`), phân quyền `taskapp_rw` (`scripts/db-roles.sql`), kiểm thử tích hợp (`tests/`), `scripts/backup.sh` & `restore.sh`, README, báo cáo kỹ thuật, video demo | minh chứng SQL, backup/restore, báo cáo, video |
 
 ## Các tuần tiếp theo
-- Week 4: demo toàn hệ thống, troubleshooting playbook và báo cáo kỹ thuật.
+Project đã hoàn thành đủ 4 checkpoint. Hướng phát triển (chưa làm): rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.

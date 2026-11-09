@@ -16,6 +16,8 @@ curl -s -o /dev/null -w 'thẳng app: %{http_code}\n' http://127.0.0.1:8000/heal
 | 502 | 000 (không kết nối được) | Container app dừng | 1 |
 | 503 | 503 | App chạy nhưng mất kết nối database | 2, 3 |
 | 502/404 | 200 | App bình thường, lỗi ở Nginx | 4 |
+| 000 (Nginx dừng) | 200 | Nginx không chạy | 4, 8 |
+| 200 (trong VM) | 200 | Trong VM bình thường nhưng từ Windows không vào được: firewall/mạng | 8 |
 
 | # | Sự cố | Nguồn |
 |---|-------|-------|
@@ -26,6 +28,9 @@ curl -s -o /dev/null -w 'thẳng app: %{http_code}\n' http://127.0.0.1:8000/heal
 | 5 | Deploy thất bại vì thiếu secret | **Đã xảy ra** 28/10/2026 |
 | 6 | SSH bị từ chối kết nối | **Đã xảy ra** 27/10/2026 |
 | 7 | Job Deploy đứng ở Queued | **Đã xảy ra** 27–28/10/2026 |
+| 8 | Dịch vụ không truy cập được từ bên ngoài (firewall, Nginx dừng, đổi IP) | Thực nghiệm (Week 4) |
+
+Ánh xạ với các lỗi giảng viên có thể chọn ở Week 4: *container stopped* → mục 1; *database mất kết nối* → mục 2; *sai biến môi trường* → mục 3; *lỗi cấu hình proxy* → mục 4; *dịch vụ không truy cập được* → mục 8.
 
 ---
 
@@ -109,7 +114,7 @@ docker compose restart app
 sleep 10
 curl -s http://127.0.0.1:8080/health; echo   # "database":"connected"
 ```
-Nếu mật khẩu trong `.env` cũng sai (không khớp GitHub Secrets), chạy lại deploy: đẩy một commit mới lên `main` (pipeline sẽ ghi lại `.env` từ Secrets và chạy `db-roles.sql`). Lưu ý: `ci-cd.yml` hiện không có nút chạy thủ công, nên không có mục **Run workflow**.
+Nếu mật khẩu trong `.env` cũng sai (không khớp GitHub Secrets), chạy lại deploy để pipeline ghi lại `.env` từ Secrets và chạy `db-roles.sql`: vào **Actions → CI/CD → Run workflow** (nhánh `main`; workflow có `workflow_dispatch`), hoặc đẩy một commit mới lên `main`.
 
 **Phòng tránh**: `.env` chỉ do pipeline tạo; mỗi lần deploy chạy `scripts/db-roles.sql` đặt lại mật khẩu role theo secret; smoke test chặn deploy hỏng.
 
@@ -190,3 +195,49 @@ systemctl list-units 'actions.runner*' --no-pager
 **Khắc phục**: bật VM; nếu service dừng thì `cd ~/actions-runner && sudo ./svc.sh start`. Job đang chờ tự chạy khi runner online (GitHub giữ job trong hàng chờ tối đa 24 giờ; quá hạn thì **Re-run**).
 
 **Phòng tránh**: runner cài dạng service (tự chạy khi VM khởi động); khi demo kiểm tra trang Runners trước.
+
+---
+
+## 8. Dịch vụ không truy cập được từ bên ngoài
+
+**Triệu chứng**
+- Trình duyệt Windows mở `http://<VM_IP>:8080` bị **timeout** (quay mãi) hoặc **ERR_CONNECTION_REFUSED**.
+- Có thể Grafana vẫn xanh hết: blackbox gọi Nginx từ **bên trong** VM nên không đi qua UFW. Đây là điểm mù của giám sát nội bộ, cần kiểm tra từ phía người dùng.
+
+**Xác minh**: kiểm tra lần lượt từ ngoài vào trong để khoanh vùng.
+```powershell
+# Trên Windows
+Test-NetConnection <VM_IP> -Port 8080     # TcpTestSucceeded: False = không tới được cổng
+ping <VM_IP>                              # không ping được = sai IP hoặc VM tắt/mất mạng
+```
+```bash
+# Trên VM
+hostname -I                                            # IP hiện tại có đúng IP đang gõ không
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/health   # 200 = Nginx + app ổn trong VM
+systemctl is-active nginx                              # inactive/failed = Nginx dừng
+sudo ss -lntp | grep ':8080 '                          # không có dòng nào = không ai lắng nghe 8080
+sudo ufw status numbered | grep 8080                   # không có ALLOW 8080 = firewall chặn
+```
+
+| Windows | Trong VM `curl :8080` | Nguyên nhân |
+|---|---|---|
+| Timeout | 200 | UFW chặn 8080 (packet bị drop) |
+| Connection refused | 000 | Nginx dừng hoặc site không `listen 8080` |
+| Ping cũng không được | — | VM đổi IP (DHCP của VMnet8), VM tắt, hoặc card mạng VM bị ngắt |
+
+**Nguyên nhân thường gặp**: rule `allow 8080/tcp` bị xóa khi chỉnh UFW; Nginx dừng (`systemctl stop nginx`, hoặc reload lỗi cú pháp rồi restart); VM nhận IP mới sau khi khởi động lại.
+
+**Khắc phục**
+```bash
+# Firewall
+sudo ufw allow 8080/tcp
+sudo ufw status verbose
+# Nginx
+sudo nginx -t && sudo systemctl start nginx
+systemctl is-active nginx
+# Kiểm tra lại trong VM
+curl -s http://127.0.0.1:8080/health; echo
+```
+Trên Windows chạy lại `Test-NetConnection <VM_IP> -Port 8080` và mở lại trình duyệt. Nếu IP đổi, dùng IP mới (`hostname -I`) cho cả trình duyệt và lệnh SSH tunnel.
+
+**Phòng tránh**: rule UFW nằm trong `scripts/bootstrap-vm.sh` (chạy lại được, không sợ chạy nhiều lần); `systemctl enable nginx` để Nginx tự chạy khi khởi động; luôn `nginx -t` trước khi reload; checklist trước demo có bước kiểm tra từ Windows; có thể đặt IP cố định cho VM (DHCP reservation của VMnet8 hoặc netplan).
