@@ -1,5 +1,24 @@
 # Kiến trúc triển khai
 
+## Final (Week 4): toàn bộ hệ thống
+
+![Sơ đồ kiến trúc final](architecture-final.png)
+
+File nguồn: [`architecture-final.svg`](architecture-final.svg). Cách dựng lại từ máy sạch: [`deployment-guide.md`](deployment-guide.md).
+
+| Lớp | Thành phần | Ghi chú thiết kế |
+|-----|-----------|------------------|
+| CI/CD | GitHub Actions: Test → Build & push (ghcr.io) → Deploy (self-hosted runner) | VM dùng NAT, không có IP public → runner trong VM tự kết nối ra GitHub, không mở thêm cổng. Smoke test so khớp `version` với mã commit |
+| Truy cập | UFW (22, 8080) → Nginx `:8080` trên host → container app `127.0.0.1:8000` | Nginx giữ trên host từ Week 1 để không ảnh hưởng project khác ở cổng 80 |
+| Ứng dụng | Flask + Gunicorn (user không root, HEALTHCHECK) | `/health` kiểm tra kết nối DB và trả về version |
+| Dữ liệu | PostgreSQL 18, volume `pgdata`, network `backend` | Không publish 5432; app dùng role `taskapp_rw` (chỉ DML) |
+| Giám sát | blackbox (2 đường: qua Nginx và thẳng app), node-exporter → Prometheus (7 luật) → Alertmanager; Grafana dashboard | Tất cả ở network `monitoring`, cổng chỉ trên 127.0.0.1, xem qua SSH tunnel. So sánh 2 đường probe để biết lỗi ở Nginx hay ở app |
+| Log | Docker json-file (10 MB × 3), Nginx `/var/log/nginx/` | Tra theo thời gian bằng `docker compose logs --since/--until` |
+| Backup | cron 02:00 → `backup.sh` (pg_dump, sha256, giữ 7 ngày) → `backup.prom` → cảnh báo `BackupTooOld` | `restore.sh` kiểm tra sha256, tạo bản `pre-restore` trước khi khôi phục |
+| Secrets | GitHub Secrets → `.env` quyền 600 | Không có mật khẩu trong Git |
+
+Thay đổi so với Week 2: thêm stack giám sát (5 container), network `monitoring` tách khỏi `backend`, role DB tối thiểu `taskapp_rw`, backup/restore tự động, pipeline kiểm tra cấu hình giám sát và luật cảnh báo.
+
 ## Week 2: Docker Compose + CI/CD
 
 ![Sơ đồ kiến trúc Week 2](architecture-week2.png)

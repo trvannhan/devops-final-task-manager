@@ -1,0 +1,239 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="1250" viewBox="0 0 1460 1250" font-family="Inter, DejaVu Sans, Segoe UI, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2937"/>
+    </marker>
+    <style>
+      .box{fill:#eef2f7;stroke:#1f2937;stroke-width:1.6}
+      .key{fill:#dff3ea;stroke:#1f2937;stroke-width:1.8}
+      .gh{fill:#e7eefb;stroke:#1f2937;stroke-width:1.6}
+      .mon{fill:#fdf1dc;stroke:#1f2937;stroke-width:1.6}
+      .bak{fill:#efe7fb;stroke:#1f2937;stroke-width:1.6}
+      .t{font-size:16px;font-weight:700;fill:#111827}
+      .s{font-size:13px;fill:#1f2937}
+      .l{font-size:13px;fill:#111827}
+      .n{font-size:13px;fill:#1f2937}
+      .h{font-size:24px;font-weight:800;fill:#111827}
+      .ln{stroke:#1f2937;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .dash{stroke-dasharray:6 5}
+    </style>
+  </defs>
+  <rect width="1460" height="1250" fill="#ffffff"/>
+
+  <text x="730" y="46" text-anchor="middle" font-size="28" font-weight="800" fill="#111827">DevOps Final Project – Kiến trúc Task Manager (Final, Week 1–4)</text>
+
+  <!-- ===== Panel 1: CI/CD ===== -->
+  <rect x="20" y="70" width="1420" height="370" fill="none" stroke="#1f2937" stroke-width="1.4"/>
+  <text x="40" y="105" class="h">CI/CD: từ commit tới production</text>
+
+  <rect x="40" y="185" width="190" height="80" class="box"/>
+  <text x="135" y="218" text-anchor="middle" class="t">Developer</text>
+  <text x="135" y="241" text-anchor="middle" class="s">Nhân · Lực · Long</text>
+
+  <rect x="290" y="185" width="200" height="80" class="box"/>
+  <text x="390" y="218" text-anchor="middle" class="t">GitHub repository</text>
+  <text x="390" y="241" text-anchor="middle" class="s">main · PR · Run workflow</text>
+  <path d="M230,225 L288,225" class="ln"/>
+  <text x="259" y="215" text-anchor="middle" class="l">push</text>
+
+  <rect x="545" y="120" width="635" height="215" rx="10" fill="#fafbfc" stroke="#1f2937" stroke-width="1.6" class="dash"/>
+  <text x="565" y="146" font-size="15" font-weight="800" fill="#111827">GitHub Actions (ci-cd.yml)</text>
+  <path d="M490,225 L572,225" class="ln"/>
+  <text x="531" y="215" text-anchor="middle" class="l">kích hoạt</text>
+
+  <rect x="575" y="160" width="180" height="140" class="key"/>
+  <text x="665" y="186" text-anchor="middle" class="t">1. Test</text>
+  <text x="665" y="208" text-anchor="middle" class="s">pytest 6 test</text>
+  <text x="665" y="226" text-anchor="middle" class="s">+ PostgreSQL 18 tạm</text>
+  <text x="665" y="244" text-anchor="middle" class="s">promtool test rules</text>
+  <text x="665" y="262" text-anchor="middle" class="s">compose / amtool check</text>
+  <text x="665" y="280" text-anchor="middle" class="s">dashboard JSON</text>
+
+  <rect x="785" y="160" width="180" height="140" class="key"/>
+  <text x="875" y="186" text-anchor="middle" class="t">2. Build &amp; push</text>
+  <text x="875" y="208" text-anchor="middle" class="s">docker buildx</text>
+  <text x="875" y="226" text-anchor="middle" class="s">tag = mã commit</text>
+  <text x="875" y="244" text-anchor="middle" class="s">APP_VERSION = sha</text>
+  <text x="875" y="262" text-anchor="middle" class="s">chỉ chạy trên main</text>
+
+  <rect x="995" y="160" width="170" height="140" class="key"/>
+  <text x="1080" y="186" text-anchor="middle" class="t">3. Deploy</text>
+  <text x="1080" y="208" text-anchor="middle" class="s">self-hosted runner</text>
+  <text x="1080" y="226" text-anchor="middle" class="s">.env + db-roles.sql</text>
+  <text x="1080" y="244" text-anchor="middle" class="s">compose up -d</text>
+  <text x="1080" y="262" text-anchor="middle" class="s">cron backup 02:00</text>
+  <text x="1080" y="280" text-anchor="middle" class="s">smoke test version</text>
+
+  <path d="M755,230 L783,230" class="ln"/>
+  <path d="M965,230 L993,230" class="ln"/>
+  <text x="575" y="323" font-size="13" font-weight="700" fill="#9b2c1f">Test lỗi → dừng, không build/deploy · PR chỉ chạy Test · smoke test sai version → job đỏ</text>
+
+  <rect x="1225" y="175" width="200" height="110" class="gh"/>
+  <text x="1325" y="205" text-anchor="middle" class="t">Container Registry</text>
+  <text x="1325" y="228" text-anchor="middle" class="s">ghcr.io/trvannhan/</text>
+  <text x="1325" y="247" text-anchor="middle" class="s">devops-final-task-manager</text>
+  <text x="1325" y="266" text-anchor="middle" class="s">:&lt;mã commit&gt;</text>
+  <path d="M875,160 L875,132 L1300,132 L1300,173" class="ln"/>
+  <text x="1240" y="125" text-anchor="middle" class="l">push image</text>
+
+  <rect x="545" y="350" width="440" height="80" class="gh"/>
+  <text x="765" y="376" text-anchor="middle" class="t">GitHub Secrets</text>
+  <text x="765" y="397" text-anchor="middle" font-size="12" fill="#1f2937">POSTGRES_PASSWORD · APP_DB_PASSWORD · GRAFANA_ADMIN_PASSWORD</text>
+  <text x="765" y="417" text-anchor="middle" font-size="12" fill="#1f2937">→ job Deploy ghi ra /opt/taskmanager/.env (quyền 600)</text>
+  <path d="M985,390 L1030,390 L1030,302" class="ln"/>
+
+  <!-- ===== Panel 2: VM ===== -->
+  <rect x="20" y="455" width="1420" height="780" fill="none" stroke="#1f2937" stroke-width="1.4"/>
+  <text x="40" y="490" class="h">Vận hành trên máy ảo: ứng dụng · giám sát · bảo mật · backup</text>
+
+  <!-- Windows side -->
+  <text x="40" y="630" class="s" font-weight="700">Máy host Windows</text>
+  <rect x="40" y="645" width="190" height="80" class="box"/>
+  <text x="135" y="678" text-anchor="middle" class="t">Trình duyệt</text>
+  <text x="135" y="700" text-anchor="middle" class="s">Người dùng</text>
+  <text x="135" y="748" text-anchor="middle" class="l" font-weight="700">HTTP → VM_IP:8080</text>
+
+  <rect x="40" y="1090" width="190" height="90" class="box"/>
+  <text x="135" y="1118" text-anchor="middle" class="t">Quản trị viên</text>
+  <text x="135" y="1140" text-anchor="middle" class="s">SSH + tunnel</text>
+  <text x="135" y="1160" text-anchor="middle" class="s">3000 · 9090 · 9093</text>
+
+  <!-- UFW -->
+  <rect x="255" y="515" width="32" height="700" fill="#f6d5cf" stroke="#9b2c1f" stroke-width="1.6"/>
+  <text transform="translate(276 865) rotate(-90)" text-anchor="middle" font-size="15" font-weight="800" fill="#7a1f14">UFW · deny incoming · chỉ cho phép 22, 8080</text>
+
+  <!-- VM region -->
+  <rect x="305" y="505" width="1115" height="715" rx="10" fill="#fafbfc" stroke="#1f2937" stroke-width="1.8" class="dash"/>
+  <text x="325" y="533" font-size="16" font-weight="800" fill="#111827">VM Ubuntu 26.04.1 LTS · VMware NAT (VMnet8) · Docker + Compose v2</text>
+
+  <!-- runner + deploy dir -->
+  <rect x="930" y="550" width="230" height="70" class="box"/>
+  <text x="1045" y="578" text-anchor="middle" class="t">Self-hosted runner</text>
+  <text x="1045" y="600" text-anchor="middle" class="s">service, user vannhan</text>
+  <path d="M1060,548 L1060,302" class="ln dash"/>
+  <text x="1070" y="470" class="l">nhận job qua HTTPS (đi ra)</text>
+
+  <rect x="1190" y="550" width="215" height="70" class="box"/>
+  <text x="1297" y="578" text-anchor="middle" class="t">/opt/taskmanager</text>
+  <text x="1297" y="600" text-anchor="middle" class="s">compose · .env · scripts</text>
+  <path d="M1325,285 L1325,548" class="ln"/>
+  <text x="1335" y="345" class="l">pull image</text>
+  <path d="M1160,585 L1188,585" class="ln"/>
+
+  <!-- Nginx -->
+  <rect x="325" y="645" width="185" height="80" class="key"/>
+  <text x="417" y="678" text-anchor="middle" class="t">Nginx :8080</text>
+  <text x="417" y="700" text-anchor="middle" class="s">reverse proxy (host)</text>
+  <path d="M230,685 L323,685" class="ln"/>
+
+  <!-- log note -->
+  <text x="325" y="975" class="n" font-weight="700">Log</text>
+  <text x="325" y="995" class="n">Docker json-file</text>
+  <text x="325" y="1013" class="n">10 MB × 3 / container</text>
+  <text x="325" y="1031" class="n">docker compose logs</text>
+  <text x="325" y="1049" class="n">/var/log/nginx/</text>
+
+  <!-- sshd -->
+  <rect x="325" y="1100" width="185" height="70" class="box"/>
+  <text x="417" y="1128" text-anchor="middle" class="t">sshd :22</text>
+  <text x="417" y="1150" text-anchor="middle" class="s">quản trị + tunnel</text>
+  <path d="M230,1135 L323,1135" class="ln"/>
+
+  <!-- Compose region -->
+  <rect x="545" y="640" width="860" height="430" rx="8" fill="#ffffff" stroke="#1f6f54" stroke-width="1.6" class="dash"/>
+  <text x="560" y="660" font-size="14" font-weight="800" fill="#1f6f54">Docker Compose project "taskmanager" · cổng publish chỉ trên 127.0.0.1</text>
+  <path d="M1297,620 L1297,638" class="ln"/>
+  <text x="1170" y="634" class="l" text-anchor="end">compose pull + up -d</text>
+
+  <!-- backend network -->
+  <rect x="560" y="672" width="830" height="148" rx="6" fill="#f3fbf7" stroke="#1f6f54" stroke-width="1.2" class="dash"/>
+  <text x="575" y="692" font-size="13" font-weight="700" fill="#1f6f54">network backend</text>
+
+  <rect x="580" y="702" width="300" height="100" class="key"/>
+  <text x="730" y="730" text-anchor="middle" class="t">container app</text>
+  <text x="730" y="752" text-anchor="middle" class="s">Gunicorn + Flask · user không root</text>
+  <text x="730" y="772" text-anchor="middle" class="s">127.0.0.1:8000 · HEALTHCHECK</text>
+  <text x="730" y="790" text-anchor="middle" class="s">(thuộc cả 2 network)</text>
+  <path d="M510,700 L578,730" class="ln"/>
+  <text x="535" y="702" text-anchor="middle" class="l">proxy</text>
+
+  <rect x="960" y="702" width="220" height="100" class="key"/>
+  <text x="1070" y="730" text-anchor="middle" class="t">container db</text>
+  <text x="1070" y="752" text-anchor="middle" class="s">postgres:18 · taskdb</text>
+  <text x="1070" y="772" text-anchor="middle" class="s">5432 không publish</text>
+  <path d="M880,752 L958,752" class="ln"/>
+  <text x="919" y="742" text-anchor="middle" class="l">taskapp_rw</text>
+
+  <g>
+    <path d="M1225,722 L1225,778 A75,13 0 0 0 1375,778 L1375,722" fill="#eef2f7" stroke="#1f2937" stroke-width="1.6"/>
+    <ellipse cx="1300" cy="722" rx="75" ry="13" fill="#e3e9f1" stroke="#1f2937" stroke-width="1.6"/>
+    <text x="1300" y="755" text-anchor="middle" class="t">Volume pgdata</text>
+    <text x="1300" y="775" text-anchor="middle" class="s">dữ liệu bền vững</text>
+  </g>
+  <path d="M1180,752 L1223,752" class="ln"/>
+
+  <!-- monitoring network -->
+  <rect x="560" y="835" width="830" height="225" rx="6" fill="#fffaf0" stroke="#a16207" stroke-width="1.2" class="dash"/>
+  <text x="1375" y="855" text-anchor="end" font-size="13" font-weight="700" fill="#a16207">network monitoring (không truy cập được db)</text>
+
+  <rect x="580" y="870" width="180" height="85" class="mon"/>
+  <text x="670" y="896" text-anchor="middle" class="t">blackbox</text>
+  <text x="670" y="917" text-anchor="middle" class="s">GET /health</text>
+  <text x="670" y="936" text-anchor="middle" class="s">via=nginx · via=app</text>
+  <path d="M670,868 L670,804" class="ln"/>
+  <text x="680" y="830" class="l">via=app</text>
+  <path d="M580,935 L490,935 L490,727" class="ln"/>
+  <text x="482" y="850" text-anchor="end" class="l">via=nginx</text>
+
+  <rect x="800" y="870" width="190" height="85" class="mon"/>
+  <text x="895" y="896" text-anchor="middle" class="t">Prometheus</text>
+  <text x="895" y="917" text-anchor="middle" class="s">127.0.0.1:9090</text>
+  <text x="895" y="936" text-anchor="middle" class="s">7 luật · lưu 7 ngày</text>
+  <path d="M760,905 L798,905" class="ln"/>
+
+  <rect x="1030" y="870" width="170" height="85" class="mon"/>
+  <text x="1115" y="896" text-anchor="middle" class="t">Alertmanager</text>
+  <text x="1115" y="917" text-anchor="middle" class="s">127.0.0.1:9093</text>
+  <text x="1115" y="936" text-anchor="middle" class="s">gom nhóm · inhibit</text>
+  <path d="M990,905 L1028,905" class="ln"/>
+  <text x="1009" y="895" text-anchor="middle" class="l">alert</text>
+
+  <rect x="580" y="975" width="180" height="70" class="mon"/>
+  <text x="670" y="1001" text-anchor="middle" class="t">node-exporter</text>
+  <text x="670" y="1022" text-anchor="middle" class="s">CPU · RAM · disk · backup</text>
+  <path d="M760,1010 L840,1010 L840,957" class="ln"/>
+
+  <rect x="1030" y="975" width="170" height="70" class="mon"/>
+  <text x="1115" y="1001" text-anchor="middle" class="t">Grafana</text>
+  <text x="1115" y="1022" text-anchor="middle" class="s">127.0.0.1:3000 · dashboard</text>
+  <path d="M1030,1010 L950,1010 L950,957" class="ln"/>
+  <text x="990" y="1028" text-anchor="middle" class="l">truy vấn</text>
+
+  <text x="1215" y="900" class="n" font-weight="700">Cảnh báo</text>
+  <text x="1215" y="918" class="n">AppContainerDown</text>
+  <text x="1215" y="935" class="n">AppDownViaNginx</text>
+  <text x="1215" y="952" class="n">HealthCheckSlow</text>
+  <text x="1215" y="969" class="n">HostHighCpu / Memory</text>
+  <text x="1215" y="986" class="n">HostDiskAlmostFull</text>
+  <text x="1215" y="1003" class="n">BackupTooOld</text>
+
+  <!-- backup row -->
+  <rect x="560" y="1100" width="200" height="80" class="bak"/>
+  <text x="660" y="1127" text-anchor="middle" class="t">cron 02:00</text>
+  <text x="660" y="1148" text-anchor="middle" class="s">backup.sh (pg_dump</text>
+  <text x="660" y="1166" text-anchor="middle" class="s">trong container db)</text>
+
+  <rect x="800" y="1100" width="250" height="80" class="bak"/>
+  <text x="925" y="1127" text-anchor="middle" class="t">/opt/taskmanager/backups</text>
+  <text x="925" y="1148" text-anchor="middle" class="s">.dump + .sha256 · quyền 700</text>
+  <text x="925" y="1166" text-anchor="middle" class="s">giữ 7 ngày</text>
+  <path d="M760,1140 L798,1140" class="ln"/>
+  <path d="M860,1098 L860,1060 L700,1060 L700,1047" class="ln"/>
+  <text x="868" y="1086" class="l">backup.prom</text>
+
+  <rect x="1090" y="1100" width="210" height="80" class="bak"/>
+  <text x="1195" y="1127" text-anchor="middle" class="t">restore.sh</text>
+  <text x="1195" y="1148" text-anchor="middle" class="s">kiểm tra sha256</text>
+  <text x="1195" y="1166" text-anchor="middle" class="s">pre-restore → pg_restore</text>
+  <path d="M1050,1140 L1088,1140" class="ln"/>
+</svg>
