@@ -329,7 +329,8 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Deployment guide từ máy sạch + `scripts/bootstrap-vm.sh`
 - [x] Troubleshooting playbook ≥ 3 sự cố (hiện có 8)
 - [ ] Kiểm thử deployment guide trên VM sạch (ảnh trong `evidence/week4/`)
-- [ ] Ảnh minh chứng end-to-end và troubleshooting (`evidence/week4/`)
+- [x] Ảnh minh chứng end-to-end bản final `c7bb2f4`: pipeline, smoke test, web (`evidence/week4/01`–`03`, mô tả trong [`evidence/week4/README.md`](evidence/week4/README.md))
+- [ ] Ảnh diễn tập troubleshooting (`evidence/week4/`)
 - [x] Technical report 6–10 trang: [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx) (nguồn Markdown: [`docs/technical-report.md`](docs/technical-report.md))
 - [ ] Video demo final 5–10 phút
 - [ ] Release/tag `v1.0.0`
