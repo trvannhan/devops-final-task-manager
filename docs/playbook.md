@@ -116,6 +116,24 @@ curl -s http://127.0.0.1:8080/health; echo   # "database":"connected"
 ```
 Nếu mật khẩu trong `.env` cũng sai (không khớp GitHub Secrets), chạy lại deploy để pipeline ghi lại `.env` từ Secrets và chạy `db-roles.sql`: vào **Actions → CI/CD → Run workflow** (nhánh `main`; workflow có `workflow_dispatch`), hoặc đẩy một commit mới lên `main`.
 
+**Các biến khác trong `.env` bị sai hoặc bị xoá**
+
+| Triệu chứng | Nguyên nhân |
+|---|---|
+| `docker compose up` báo `APP_DB_PASSWORD chưa được đặt` (hoặc `POSTGRES_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`) | Biến bị xoá khỏi `.env`; `docker-compose.yml` dùng cú pháp `${VAR:?...}` nên dừng ngay, không chạy với giá trị rỗng |
+| `docker compose up -d app` báo `manifest unknown` / `not found` | `APP_IMAGE` trỏ tới tag không tồn tại trên ghcr.io |
+| `/health` trả `version` khác commit mới nhất | `APP_IMAGE` bị đổi về một tag cũ |
+
+Kiểm tra mà không in mật khẩu ra màn hình:
+```bash
+cd /opt/taskmanager
+cut -d= -f1 .env                                   # đủ 4 biến: POSTGRES_PASSWORD, APP_DB_PASSWORD, GRAFANA_ADMIN_PASSWORD, APP_IMAGE
+grep '^APP_IMAGE=' .env                            # tag phải là mã commit mới nhất trên main
+docker compose config --quiet && echo "compose OK"
+ls -l .env                                         # -rw------- (600)
+```
+Khắc phục chung: không sửa tay `.env`. Chạy lại **Actions → CI/CD → Run workflow** (nhánh `main`) để pipeline ghi lại `.env` đúng từ GitHub Secrets, đặt lại mật khẩu role và chạy smoke test.
+
 **Phòng tránh**: `.env` chỉ do pipeline tạo; mỗi lần deploy chạy `scripts/db-roles.sql` đặt lại mật khẩu role theo secret; smoke test chặn deploy hỏng.
 
 ---
@@ -136,9 +154,9 @@ sudo tail -n 20 /var/log/nginx/error.log      # connect() failed (111: Connectio
 
 **Nguyên nhân**: `proxy_pass` trỏ sai cổng (ví dụ `127.0.0.1:8001`), site bị tắt, hoặc file cấu hình lỗi cú pháp.
 
-**Khắc phục**: chép lại cấu hình chuẩn từ Git rồi nạp lại.
+**Khắc phục**: chép lại cấu hình chuẩn rồi nạp lại. File chuẩn nằm ở `/opt/taskmanager/scripts/`, được pipeline cập nhật từ Git mỗi lần deploy.
 ```bash
-sudo cp ~/devops-final-task-manager/scripts/nginx-taskmanager.conf /etc/nginx/sites-available/taskmanager
+sudo cp /opt/taskmanager/scripts/nginx-taskmanager.conf /etc/nginx/sites-available/taskmanager
 sudo ln -sfn /etc/nginx/sites-available/taskmanager /etc/nginx/sites-enabled/taskmanager
 sudo nginx -t && sudo systemctl reload nginx
 curl -s http://127.0.0.1:8080/health; echo

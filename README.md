@@ -335,11 +335,20 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [ ] Release/tag `v1.0.0`
 
 ## Phân công nhiệm vụ
-| Thành viên | MSSV | Phụ trách | Minh chứng |
-|------------|------|-----------|------------|
-| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | ảnh VM, minh chứng API, commit |
-| Trần Văn Lực | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | `ufw status`, trạng thái service, `docs/` |
-| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
+| Thành viên | MSSV | Week 1 | Week 2–4 | Minh chứng |
+|------------|------|--------|----------|------------|
+| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | `Dockerfile`, `docker-compose.yml`; CI/CD GitHub Actions (Test → Build & push ghcr.io → Deploy), self-hosted runner, smoke test; deployment guide và `scripts/bootstrap-vm.sh`; sơ đồ kiến trúc final; tổng hợp technical report; xử lý 3 sự cố thật (playbook mục 5–7) | `.github/workflows/ci-cd.yml`, `evidence/week2/`, `docs/deployment-guide.md`, `docs/technical-report.md` |
+| Trần Văn Lực | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | Giám sát Prometheus, Grafana (dashboard 11 panel), Alertmanager, blackbox; 7 luật cảnh báo và `promtool test rules`; checklist bảo mật (cổng, firewall, 2 mạng Docker); playbook mục 1, 4, 8 | `monitoring/`, `docs/security.md`, `evidence/week3/01`–`08` |
+| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | Chuyển dữ liệu Week 1 vào container; phân quyền DB (`taskapp_rw`); backup/restore, cron 02:00 và cảnh báo BackupTooOld; playbook mục 2, 3; README; ảnh minh chứng Week 4 và video final | `scripts/backup.sh`, `scripts/restore.sh`, `scripts/db-roles.sql`, `evidence/week3/09`–`10`, video |
+
+Phần trình bày Week 4:
+| Phần | Người trình bày |
+|------|-----------------|
+| Kiến trúc và trách nhiệm thành viên (3 phút) | Trần Văn Nhân |
+| Commit → pipeline → production (5–7 phút) | Trần Văn Nhân |
+| Giám sát và bảo mật | Trần Văn Lực |
+| Backup và restore | Nguyễn Vũ Hoàng Long |
+| Live troubleshooting | Người phụ trách mục playbook tương ứng: Lực (container dừng, proxy, không truy cập được), Long (database, sai biến môi trường) |
 
 ## Các tuần tiếp theo
-Project đã hoàn thành đủ 4 checkpoint. Hướng phát triển (chưa làm): rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.
+Hướng phát triển (chưa làm): rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.

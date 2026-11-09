@@ -37,11 +37,11 @@ Việc triển khai thủ công ứng dụng web lên máy chủ dễ dẫn đ�
 
 *Bảng 2. Phân công nhiệm vụ các thành viên (theo thống nhất trong `README.md`)*
 
-| Thành viên | MSSV | Phụ trách | Minh chứng |
+| Thành viên | MSSV | Week 1 | Week 2–4 |
 |---|---|---|---|
-| **Trần Văn Nhân** *(nhóm trưởng)* | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | ảnh VM, minh chứng API, commit |
-| **Trần Văn Lực** | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | `ufw status`, trạng thái service, `docs/` |
-| **Nguyễn Vũ Hoàng Long** | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
+| **Trần Văn Nhân** *(nhóm trưởng)* | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | Docker và Docker Compose; CI/CD GitHub Actions, self-hosted runner, smoke test; deployment guide và `bootstrap-vm.sh`; sơ đồ kiến trúc final; tổng hợp báo cáo; xử lý 3 sự cố thật |
+| **Trần Văn Lực** | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | Prometheus, Grafana, Alertmanager, blackbox; 7 luật cảnh báo và `promtool`; checklist bảo mật; playbook mục 1, 4, 8 |
+| **Nguyễn Vũ Hoàng Long** | 23090026 | Database PostgreSQL và CRUD, README, video demo | Chuyển dữ liệu Week 1 vào container; phân quyền `taskapp_rw`; backup/restore và cron; playbook mục 2, 3; README; minh chứng Week 4 và video |
 
 ---
 
