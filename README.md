@@ -335,11 +335,11 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [ ] Release/tag `v1.0.0`
 
 ## Phân công nhiệm vụ
-| Thành viên | MSSV | Phụ trách (Week 1–4) | Minh chứng |
-|------------|------|----------------------|------------|
-| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu & SSH, Flask app/API, `Dockerfile`, `docker-compose.yml`, workflow CI/CD, self-hosted runner, `scripts/bootstrap-vm.sh`, `docs/deployment-guide.md` | ảnh VM, minh chứng API/pipeline, commit |
-| Trần Văn Lực | 23090019 | Firewall UFW, Nginx reverse proxy, sơ đồ kiến trúc (`docs/architecture*.svg/png`), Prometheus/Alertmanager/Grafana/Blackbox, kiểm thử cảnh báo, `docs/security.md`, `docs/playbook.md` | `ufw status`, `monitoring/`, ảnh cảnh báo, `docs/` |
-| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL (`schema.sql`), phân quyền `taskapp_rw` (`scripts/db-roles.sql`), kiểm thử tích hợp (`tests/`), `scripts/backup.sh` & `restore.sh`, README, báo cáo kỹ thuật, video demo | minh chứng SQL, backup/restore, báo cáo, video |
+| Thành viên | MSSV | Phụ trách | Minh chứng |
+|------------|------|-----------|------------|
+| Trần Văn Nhân (nhóm trưởng) | 23090036 | Máy ảo Ubuntu và SSH, Flask app/API, GitHub repository | ảnh VM, minh chứng API, commit |
+| Trần Văn Lực | 23090019 | Firewall UFW, triển khai Nginx + systemd, sơ đồ kiến trúc | `ufw status`, trạng thái service, `docs/` |
+| Nguyễn Vũ Hoàng Long | 23090026 | Database PostgreSQL và CRUD, README, video demo | minh chứng SQL, README, video |
 
 ## Các tuần tiếp theo
 Project đã hoàn thành đủ 4 checkpoint. Hướng phát triển (chưa làm): rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.
