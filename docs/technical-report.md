@@ -8,7 +8,9 @@
 
 ## Tóm tắt (Abstract)
 
-Báo cáo trình bày quá trình xây dựng quy trình DevOps đầu-cuối cho ứng dụng Task Manager (Flask + PostgreSQL 18) trên máy ảo Ubuntu 26.04.1 LTS trong 4 tuần. Ứng dụng và database được đóng gói bằng Docker Compose phía sau Nginx cổng 8080. Pipeline GitHub Actions 3 job (`Test` → `Build & push image` → `Deploy to Ubuntu VM`) đẩy image gắn tag mã commit lên `ghcr.io`, triển khai qua self-hosted runner trong mạng NAT và xác nhận bằng smoke test đối chiếu phiên bản trên `/health`. Prometheus, Alertmanager và Grafana giám sát tài nguyên VM và hai đường kiểm tra `/health` với 7 luật cảnh báo được kiểm thử tự động bằng `promtool`. Hệ thống chỉ mở cổng 22 và 8080, lấy secrets từ GitHub Secrets, dùng role database quyền tối thiểu `taskapp_rw`, sao lưu hằng ngày có kiểm tra `sha256` và có quy trình khôi phục đã kiểm chứng. Bản final (commit `c7bb2f4`) được triển khai tự động trong 2 phút 32 giây; playbook ghi nhận 8 sự cố, trong đó 3 sự cố đã xảy ra thật.
+Báo cáo trình bày quá trình xây dựng và hoàn thiện quy trình DevOps đầu-cuối cho ứng dụng Task Manager (Flask + PostgreSQL 18) trên máy ảo Ubuntu 26.04.1 LTS trong 4 tuần. Hệ thống đi từ triển khai thủ công trên Ubuntu lên container hóa bằng Docker Compose, với Nginx trên host làm reverse proxy ở cổng 8080. Pipeline GitHub Actions 3 job (`Test` → `Build & push image` → `Deploy to Ubuntu VM`) tự động kiểm thử, đẩy image gắn tag mã commit lên `ghcr.io` và triển khai qua self-hosted runner trong mạng NAT; mỗi lần triển khai được xác minh bằng smoke test đối chiếu phiên bản trên `/health`.
+
+Prometheus, Grafana và Alertmanager giám sát tài nguyên VM và hai đường kiểm tra `/health` với 7 luật cảnh báo được kiểm thử tự động bằng `promtool`. Hệ thống chỉ mở các cổng cần thiết, lấy secrets từ GitHub Secrets, dùng role database quyền tối thiểu `taskapp_rw`, sao lưu hằng ngày có kiểm tra `sha256` và có quy trình khôi phục đã kiểm chứng. Ở giai đoạn hoàn thiện, nhóm xây dựng hướng dẫn triển khai, script khởi tạo môi trường VM và playbook xử lý sự cố. Phiên bản cuối (commit `c7bb2f4`) được triển khai tự động trong 2 phút 32 giây; playbook gồm 8 kịch bản, trong đó 3 sự cố đã xảy ra thật.
 
 **Từ khóa:** DevOps, CI/CD, Docker Compose, GitHub Actions, Self-hosted Runner, Prometheus, Grafana, PostgreSQL, Backup and Restore.
 
@@ -33,7 +35,7 @@ Việc triển khai thủ công ứng dụng web lên máy chủ dễ dẫn đ�
 | **Week 1** | Cài đặt thủ công trên VM Ubuntu: venv, systemd (`taskmanager.service`), Nginx `:8080`, PostgreSQL trên host, UFW. | `evidence/01-os.png` → `08-tests.png` |
 | **Week 2** | Đóng gói `Dockerfile`, `docker-compose.yml` (volume `pgdata`), CI/CD 3 job qua self-hosted runner, chuyển dữ liệu Week 1 vào container. | `evidence/week2/01` → `09` |
 | **Week 3** | Giám sát Prometheus/Grafana/Alertmanager (7 luật cảnh báo), bảo mật (secrets, role `taskapp_rw`), backup/restore và playbook. | `evidence/week3/01` → `10` |
-| **Week 4** | Hợp nhất hệ thống, viết `docs/deployment-guide.md` + `scripts/bootstrap-vm.sh` từ máy sạch, sơ đồ final, playbook 8 sự cố và báo cáo kỹ thuật. | `evidence/week4/`, `docs/`, `scripts/bootstrap-vm.sh` |
+| **Week 4** | Hợp nhất hệ thống, hoàn thiện `docs/deployment-guide.md` và `scripts/bootstrap-vm.sh` hỗ trợ khởi tạo môi trường Ubuntu trên VM mới, hoàn thiện sơ đồ kiến trúc, playbook 8 sự cố và báo cáo kỹ thuật. | `evidence/week4/`, `docs/`, `scripts/bootstrap-vm.sh` |
 
 *Bảng 2. Phân công nhiệm vụ các thành viên (theo thống nhất trong `README.md`)*
 
@@ -54,12 +56,12 @@ Việc triển khai thủ công ứng dụng web lên máy chủ dễ dẫn đ�
 *Hình 1. Sơ đồ kiến trúc hoàn chỉnh của hệ thống Task Manager (CI/CD, ứng dụng, phân tách mạng Docker, giám sát và sao lưu).*
 
 ### 2.2. Luồng xử lý yêu cầu và mô tả các thành phần
-1. **Trình duyệt → UFW → Nginx (`:8080`):** UFW chỉ mở cổng 22 và 8080; Nginx trên host chuyển tiếp tới `127.0.0.1:8000` kèm các header `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`.
+1. **Trình duyệt → UFW → Nginx (`:8080`):** UFW chỉ mở cổng 22, 80 (project `devops-app`) và 8080; Nginx trên host chuyển tiếp tới `127.0.0.1:8000` kèm các header `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`.
 2. **Container `app` → container `db`:** Gunicorn 2 worker chạy bằng user không phải root (`appuser`, UID 10001), kết nối `db:5432` qua mạng nội bộ `backend` bằng role `taskapp_rw`.
 3. **Lưu trữ bền vững (`volume pgdata`):** Container `db` (`postgres:18`) gắn volume `pgdata` vào `/var/lib/postgresql` và nạp `schema.sql` ở lần khởi tạo đầu tiên.
 4. **Giám sát và sao lưu:** `blackbox-exporter` kiểm tra `/health` qua 2 đường (`via=nginx`, `via=app`); `node-exporter` thu chỉ số CPU, RAM, đĩa và tệp chỉ số backup; Prometheus đánh giá 7 luật cảnh báo và gửi sang Alertmanager; Grafana hiển thị dashboard. Cron chạy `backup.sh` lúc 02:00.
 
-### 2.3. Bảng cổng dịch vụ và lý do chỉ mở `127.0.0.1` cho giám sát
+### 2.3. Quy hoạch cổng dịch vụ và phạm vi truy cập
 
 *Bảng 3. Quy hoạch cổng trên máy ảo Ubuntu (`docs/security.md`)*
 
@@ -121,15 +123,15 @@ Dashboard Grafana *Task Manager – Tổng quan hệ thống* được provision
 | Tên cảnh báo | Ngưỡng `for` | Mức độ | Mô tả |
 |---|---|---|---|
 | `AppDownViaNginx` | `30s` | `critical` | `/health` qua Nginx `:8080` thất bại hơn 30 giây. |
-| `AppContainerDown` | `30s` | `critical` | Gọi thẳng `http://app:8000/health` thất bại hơn 30 giây. |
+| `AppContainerDown` | `30s` | `critical` | `/health` gọi thẳng `http://app:8000/health` không phản hồi thành công liên tục trong 30 giây. |
 | `HealthCheckSlow` | `2m` | `warning` | `/health` phản hồi chậm hơn 1 giây trong 2 phút. |
 | `HostHighCpu` | `2m` | `warning` | CPU của VM trên 85% trong hơn 2 phút. |
 | `HostHighMemory` | `2m` | `warning` | RAM của VM trên 90% trong hơn 2 phút. |
 | `HostDiskAlmostFull` | `5m` | `warning` | Ổ đĩa `/` của VM đã dùng trên 85% trong 5 phút. |
 | `BackupTooOld` | `10m` | `warning` | Chưa có backup thành công trong 26 giờ. |
 
-- **Kiểm thử bằng `promtool`:** `alerts.test.yml` chạy trong CI với 4 trường hợp: app chết liên tục thì bật `AppContainerDown` sau 30 giây; lỗi chớp nhoáng 15 giây thì không báo; backup cũ hơn 26 giờ thì bật `BackupTooOld`; backup mới thì không báo.
-- **Inhibit rule và thời gian phát hiện:** Alertmanager ẩn `AppDownViaNginx` khi `AppContainerDown` đang bật để tránh báo trùng. Theo cấu hình (scrape 15 giây + `for: 30s`), cảnh báo bật sau 30–45 giây; thực đo là 45–80 giây, tùy thời điểm rơi vào chu kỳ scrape.
+- **Kiểm thử bằng `promtool`:** `alerts.test.yml` chạy trong CI với 4 trường hợp: `/health` gọi thẳng app thất bại liên tục thì bật `AppContainerDown` sau 30 giây; lỗi chớp nhoáng 15 giây thì không báo; backup cũ hơn 26 giờ thì bật `BackupTooOld`; backup mới thì không báo.
+- **Inhibit rule và thời gian phát hiện:** Alertmanager dùng inhibit rule để chặn thông báo `AppDownViaNginx` khi `AppContainerDown` đang firing, tránh báo trùng cho cùng một sự cố. Theo cấu hình (scrape 15 giây + `for: 30s`), cảnh báo bật sau 30–45 giây; thực đo là 45–80 giây, tùy thời điểm rơi vào chu kỳ scrape.
 
 ![Hình 3. Dashboard Grafana ghi nhận khoảng thời gian sự cố (vùng đỏ) và trạng thái phục hồi](../evidence/week3/05-dashboard-su-co.png)
 
@@ -149,7 +151,7 @@ sudo tail -n 50 /var/log/nginx/error.log
 
 ## 6. Bảo mật
 
-1. **Firewall và cô lập mạng (`docs/security.md`):** UFW đặt `default deny incoming`, chỉ mở cổng `22` và `8080` (cổng `80` của project khác). Container `db` chỉ nằm trong mạng `backend`, không publish cổng 5432, nên cả mạng ngoài lẫn các container trong mạng `monitoring` đều không thể kết nối trực tiếp vào database.
+1. **Firewall và cô lập mạng (`docs/security.md`):** UFW mặc định từ chối kết nối đến, chỉ mở cổng 22 (SSH), 80 (`devops-app`) và 8080 (Task Manager). Container `db` chỉ nằm trong mạng `backend` và không publish cổng 5432; container `app` nối cả hai mạng `backend` và `monitoring`, còn các container giám sát chỉ ở mạng `monitoring` nên không truy cập trực tiếp được database.
 2. **Quản lý Secrets:** Ba secret (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`) lưu trong GitHub Secrets, không có trong mã nguồn hay lịch sử Git. Khi deploy, runner dùng `umask 077` tạo `/opt/taskmanager/.env` (quyền `600`, chỉ user `vannhan` đọc được).
 3. **Phân quyền database (`scripts/db-roles.sql`):** role `taskapp` sở hữu database, chỉ dùng để tạo bảng, backup và restore; ứng dụng dùng role `taskapp_rw` (`NOSUPERUSER NOCREATEDB NOCREATEROLE`) chỉ có quyền `SELECT, INSERT, UPDATE, DELETE` trên bảng `tasks`. Kiểm chứng: chạy `DROP TABLE tasks` bằng `taskapp_rw` bị từ chối với lỗi `must be owner of table tasks`.
 4. **Gia cố container:** `app` chạy bằng user không phải root, phiên bản image được cố định, cấu hình giám sát và `schema.sql` được mount chỉ đọc (`:ro`), Grafana tắt đăng ký và truy cập ẩn danh.
@@ -160,11 +162,11 @@ sudo tail -n 50 /var/log/nginx/error.log
 
 ### 7.1. Chiến lược sao lưu (`scripts/backup.sh`) và tích hợp giám sát
 - **Sao lưu hằng ngày:** cron chạy `backup.sh` lúc 02:00: `pg_dump` định dạng custom ra tệp tạm, kiểm tra đọc được bằng `pg_restore --list` rồi mới đổi tên thành `taskdb-YYYYMMDD-HHMMSS.dump` kèm tệp `.sha256`. Tệp tạo ra có quyền `600`, thư mục `backups` quyền `700`.
-- **Lưu giữ 7 ngày:** Xóa các tệp `taskdb-*.dump*` và `pre-restore-*.dump` có thời gian sửa đổi hơn 7 ngày (`find ... -mtime +7 -print -delete`).
+- **Lưu giữ 7 ngày:** xóa các tệp `taskdb-*.dump*` và `pre-restore-*.dump` cũ hơn 7 ngày, tính theo lệnh `find` với `-mtime +7`.
 - **Tích hợp giám sát:** sau mỗi lần thành công, script ghi thời điểm, kích thước và số dòng vào `backup.prom`; `node-exporter` thu thập để Prometheus bật `BackupTooOld` khi quá 26 giờ chưa có bản mới.
 
 ### 7.2. Quy trình khôi phục (`scripts/restore.sh`) và kết quả kiểm chứng
-`restore.sh` kiểm tra `sha256`, bắt gõ đúng `YES` để xác nhận, tự lưu trạng thái hiện tại ra `pre-restore-*.dump` để có thể quay lại, dừng `app`, chạy `pg_restore --clean --single-transaction` (lỗi giữa chừng thì database giữ nguyên), bật lại `app`, chờ `/health` thành công và đếm lại số task. Bản dump đã chứa quyền `GRANT` cho `taskapp_rw` nên không cần chạy lại `db-roles.sql`.
+`restore.sh` kiểm tra `sha256`, bắt gõ đúng `YES` để xác nhận, tự lưu trạng thái hiện tại ra `pre-restore-*.dump` để có thể quay lại, dừng `app`, chạy `pg_restore --clean --single-transaction --exit-on-error` (lỗi giữa chừng thì dừng ngay và database giữ nguyên), bật lại `app`, chờ `/health` thành công và đếm lại số task. Bản dump đã chứa quyền `GRANT` cho `taskapp_rw` nên không cần chạy lại `db-roles.sql`.
 
 **Kết quả thử nghiệm thực tế ngày 04/11/2026 (`evidence/week3/09` và `10`):**
 - 12:08:59 chạy `backup.sh` khi database có **8 task**: xong sau 3 giây, tệp 4040 bytes.
@@ -194,14 +196,14 @@ Playbook (`docs/playbook.md`) gồm **8 mục sự cố** (mục 1–4 và 8 là
 
 ### 8.2. Ba sự cố thật đã xảy ra và tình huống lỗi mật khẩu DB ngày 04/11
 
-*Bảng 6. Tóm tắt các sự cố thực tế của nhóm và bài học rút ra*
+*Bảng 6. Tổng hợp các sự cố thực tế và tình huống thực nghiệm của nhóm*
 
-| Sự cố & Thời điểm | Triệu chứng & Nguyên nhân gốc | Cách khắc phục & Phòng tránh |
-|---|---|---|
-| **1. SSH bị từ chối kết nối**<br>*(27/10/2026 – mục 6)* | `Connection refused` ở cổng 22: bản Ubuntu Desktop chưa cài `openssh-server`. | Cài và bật `ssh`, mở UFW. Đã đưa vào `bootstrap-vm.sh`. |
-| **2. Job Deploy đứng ở Queued**<br>*(27–28/10/2026 – mục 7)* | Lúc đầu chưa cài runner; sau đó VM tắt nên runner *Offline*. | Cài runner dạng service tự chạy cùng VM; kiểm tra *Idle* trước demo. |
-| **3. Deploy lỗi vì thiếu secret**<br>*(28/10/2026 – mục 5)* | Job xếp hàng trước khi tạo `POSTGRES_PASSWORD` nên vẫn nhận secret rỗng. | Tạo đủ secret rồi *Re-run*. Pipeline kiểm tra và báo rõ tên secret bị thiếu. |
-| **4. Sai mật khẩu `taskapp_rw`**<br>*(04/11/2026 – mục 3)* | `/health` trả 503, log báo `password authentication failed`: mật khẩu role và `.env` lệch nhau. | Chạy lại `db-roles.sql` theo `.env`. Pipeline đồng bộ mật khẩu ở mỗi lần deploy. |
+| Sự cố & Thời điểm | Triệu chứng & Nguyên nhân gốc | Cách khắc phục & Phòng tránh | Phân loại |
+|---|---|---|---|
+| **1. SSH bị từ chối kết nối**<br>*(27/10/2026 – mục 6)* | `Connection refused` ở cổng 22: bản Ubuntu Desktop chưa cài `openssh-server`. | Cài và bật `ssh`, mở UFW. Đã đưa vào `bootstrap-vm.sh`. | Đã xảy ra |
+| **2. Job Deploy đứng ở Queued**<br>*(27–28/10/2026 – mục 7)* | Lúc đầu chưa cài runner; sau đó VM tắt nên runner *Offline*. | Cài runner dạng service tự chạy cùng VM; kiểm tra *Idle* trước demo. | Đã xảy ra |
+| **3. Deploy lỗi vì thiếu secret**<br>*(28/10/2026 – mục 5)* | Job xếp hàng trước khi tạo `POSTGRES_PASSWORD` nên vẫn nhận secret rỗng. | Tạo đủ secret rồi *Re-run*. Pipeline kiểm tra và báo rõ tên secret bị thiếu. | Đã xảy ra |
+| **4. Sai mật khẩu `taskapp_rw`**<br>*(04/11/2026 – mục 3)* | `/health` trả 503, log báo `password authentication failed`: mật khẩu role và `.env` lệch nhau. | Chạy lại `db-roles.sql` theo `.env`. Pipeline đồng bộ mật khẩu ở mỗi lần deploy. | Thực nghiệm |
 
 ---
 
@@ -221,7 +223,7 @@ Playbook (`docs/playbook.md`) gồm **8 mục sự cố** (mục 1–4 và 8 là
 | **Khôi phục `restore.sh`** | 14 giây từ lúc xác nhận, 9 → 8 task | `evidence/week3/10` |
 
 **Những điểm hệ thống đã làm tốt:**
-- Quy trình CI/CD khép kín từ commit tới production, kiểm tra tự động cả code Python (với PostgreSQL thật) lẫn cấu hình Compose, Prometheus, luật cảnh báo (`promtool`) và Alertmanager (`amtool`), kèm smoke test đối chiếu đúng mã commit.
+- Quy trình CI/CD khép kín từ commit đến triển khai trên VM Ubuntu, kiểm tra tự động cả mã nguồn Python (với PostgreSQL thật) lẫn cấu hình Compose, Prometheus, luật cảnh báo (`promtool`) và Alertmanager (`amtool`), kèm smoke test đối chiếu đúng mã commit.
 - Giám sát hai đường (`via=nginx` và `via=app`) kết hợp `inhibit_rules` giúp phân biệt ngay lỗi ở tầng proxy hay tầng ứng dụng; tích hợp chỉ số sao lưu vào Prometheus để cảnh báo `BackupTooOld`.
 - Bảo mật nhiều lớp (UFW, cô lập 2 mạng Docker, chỉ lắng nghe `127.0.0.1` + SSH tunnel, `.env` quyền `600`, role `taskapp_rw` chỉ có quyền DML).
 
@@ -239,7 +241,7 @@ Playbook (`docs/playbook.md`) gồm **8 mục sự cố** (mục 1–4 và 8 là
 ## 10. Kết luận và Tài liệu tham khảo
 
 ### 10.1. Kết luận và bài học DevOps rút ra sau 4 tuần
-Qua 4 tuần thực hiện đồ án, nhóm đã hoàn thiện chuỗi triển khai và vận hành tự động cho ứng dụng Task Manager từ cài đặt thủ công (Week 1) lên kiến trúc container hóa có CI/CD (Week 2), giám sát – bảo mật – sao lưu (Week 3) và tài liệu hóa tái tạo từ máy sạch kèm xử lý sự cố (Week 4).
+Qua 4 tuần thực hiện đồ án, nhóm đã hoàn thiện chuỗi triển khai và vận hành tự động cho ứng dụng Task Manager từ cài đặt thủ công (Week 1) lên kiến trúc container hóa có CI/CD (Week 2), giám sát – bảo mật – sao lưu (Week 3), cùng tài liệu và script hỗ trợ khởi tạo môi trường VM mới và xử lý sự cố (Week 4).
 
 **Bốn bài học thực tế rút ra:**
 1. **Deploy phải được xác minh bằng smoke test:** `docker compose up -d` chạy xong chưa đủ; chỉ khi `/health` trả đúng mã commit mới chắc bản mới đang chạy và kết nối được database.
