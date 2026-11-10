@@ -6,8 +6,10 @@
 |------|-----------------|-----------|
 | Week 1 | Thủ công: venv + systemd + PostgreSQL cài trên VM | [Hướng dẫn cài đặt thủ công](#hướng-dẫn-cài-đặt-thủ-công-week-1) |
 | Week 2 | Docker Compose + GitHub Actions CI/CD, deploy tự động qua self-hosted runner | [Week 2](#week-2-docker-compose-và-cicd) |
-| **Week 3** | Giám sát (Prometheus, Grafana, Alertmanager), bảo mật, backup/restore, playbook | [Week 3](#week-3-giám-sát-bảo-mật-và-backup) |
+| Week 3 | Giám sát (Prometheus, Grafana, Alertmanager), bảo mật, backup/restore, playbook | [Week 3](#week-3-giám-sát-bảo-mật-và-backup) |
 | **Week 4** | Bản final: deployment guide từ máy sạch, sơ đồ final, playbook 8 sự cố, technical report, demo | [Week 4](#week-4-final-demo-và-troubleshooting) |
+
+**Bản phát hành final:** [`v1.0.0`](https://github.com/trvannhan/devops-final-task-manager/releases/tag/v1.0.0) · **Báo cáo kỹ thuật:** [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx)
 
 > **Triển khai mới từ đầu:** làm theo [`docs/deployment-guide.md`](docs/deployment-guide.md) (không cần các bước thủ công của Week 1). Các phần Week 1–3 bên dưới giữ lại làm lịch sử và minh chứng từng checkpoint.
 
@@ -243,7 +245,7 @@ docker compose exec db psql -U taskapp -d taskdb -c 'SELECT id,title,completed F
 | Phân quyền DB | App dùng role `taskapp_rw` chỉ có SELECT/INSERT/UPDATE/DELETE | `scripts/db-roles.sql` |
 | Backup | `pg_dump` hằng ngày 02:00 (cron), giữ 7 ngày, kiểm tra sha256, cảnh báo nếu quá 26 giờ chưa backup | `scripts/backup.sh` |
 | Restore | Kiểm tra sha256 → lưu trạng thái hiện tại → dừng app → `pg_restore` trong 1 transaction → chạy lại app | `scripts/restore.sh` |
-| Xử lý sự cố | 7 sự cố (3 đã xảy ra thật) | [`docs/playbook.md`](docs/playbook.md) |
+| Xử lý sự cố | 8 sự cố (3 đã xảy ra thật) | [`docs/playbook.md`](docs/playbook.md) |
 
 ### Cài đặt (làm một lần)
 1. Tạo thêm 2 secret trong **Settings → Secrets and variables → Actions** (chỉ chữ và số, ví dụ `openssl rand -hex 16`):
@@ -314,9 +316,9 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 2. **Giám sát**: Grafana (CPU/RAM, trạng thái `/health` qua Nginx và thẳng app), Prometheus *Targets* đều UP, `docker compose logs`.
 3. **Bảo mật**: `sudo ufw status verbose`, `sudo ss -lntp` (chỉ 22, 8080 mở ra ngoài), `.env` quyền 600, role `taskapp_rw` không `DROP TABLE` được.
 4. **Backup/restore**: `backup.sh` → thêm task thử nghiệm → `restore.sh` → task thử nghiệm biến mất, số task trở về như lúc backup.
-5. **Troubleshooting**: giảng viên chọn lỗi; tra bảng khoanh vùng ở đầu [`docs/playbook.md`](docs/playbook.md).
+5. **Troubleshooting**: gây một lỗi trong bảng dưới, khoanh vùng bằng `docker compose ps` và 2 lệnh `curl` `/health` (qua Nginx `:8080` và thẳng app `:8000`), khắc phục theo [`docs/playbook.md`](docs/playbook.md).
 
-| Lỗi giảng viên có thể chọn | Playbook |
+| Lỗi có thể demo | Playbook |
 |---|---|
 | Container stopped | Mục 1 |
 | Database mất kết nối | Mục 2 |
@@ -332,7 +334,7 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Troubleshooting: demo trực tiếp trong buổi báo cáo theo `docs/playbook.md`
 - [x] Technical report 6–10 trang: [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx) (nguồn Markdown: [`docs/technical-report.md`](docs/technical-report.md))
 - [ ] Video demo final 5–10 phút
-- [ ] Release/tag `v1.0.0`
+- [x] Release/tag [`v1.0.0`](https://github.com/trvannhan/devops-final-task-manager/releases/tag/v1.0.0) (commit `059b4c9`)
 
 ## Phân công nhiệm vụ
 | Thành viên | MSSV | Week 1 | Week 2–4 | Minh chứng |
@@ -350,5 +352,5 @@ Phần trình bày Week 4:
 | Backup và restore | Nguyễn Vũ Hoàng Long |
 | Live troubleshooting | Người phụ trách mục playbook tương ứng: Lực (container dừng, proxy, không truy cập được), Long (database, sai biến môi trường) |
 
-## Các tuần tiếp theo
-Hướng phát triển (chưa làm): chạy thử deployment guide trên một VM hoàn toàn mới, rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.
+## Hướng phát triển
+Chưa làm trong phạm vi đồ án: chạy thử deployment guide trên một VM hoàn toàn mới, rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.
