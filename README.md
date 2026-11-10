@@ -140,7 +140,6 @@ Trên trình duyệt Windows, mở `http://<VM_IP>:8080/` (thay `<VM_IP>` bằng
 - [x] Minh chứng server trong `evidence/`: phiên bản OS, đăng nhập SSH, `ufw status`, các cổng đang lắng nghe, trạng thái service
 - [x] Minh chứng app + DB: kết quả POST/GET/PATCH và câu SELECT trong PostgreSQL (không lộ mật khẩu)
 - [x] Ảnh truy cập web từ Windows qua cổng 8080 (`evidence/07a`, `07b`)
-- [ ] Video demo dự phòng
 
 ## Week 2: Docker Compose và CI/CD
 
@@ -333,7 +332,6 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Ảnh minh chứng end-to-end bản final `c7bb2f4`: pipeline, smoke test, web (`evidence/week4/01`–`03`, mô tả trong [`evidence/week4/README.md`](evidence/week4/README.md))
 - [x] Troubleshooting: demo trực tiếp trong buổi báo cáo theo `docs/playbook.md`
 - [x] Technical report 6–10 trang: [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx) (nguồn Markdown: [`docs/technical-report.md`](docs/technical-report.md))
-- [ ] Video demo final 5–10 phút
 - [x] Release/tag [`v1.0.0`](https://github.com/trvannhan/devops-final-task-manager/releases/tag/v1.0.0) (commit `059b4c9`)
 
 ## Phân công nhiệm vụ
