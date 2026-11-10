@@ -328,8 +328,8 @@ Chiến lược lưu trữ: 1 bản mỗi ngày, giữ 7 ngày gần nhất (b�
 - [x] Sơ đồ kiến trúc final: `docs/architecture-final.png` (nguồn `.svg`)
 - [x] Deployment guide từ máy sạch + `scripts/bootstrap-vm.sh`
 - [x] Troubleshooting playbook ≥ 3 sự cố (hiện có 8)
-- [ ] Kiểm thử deployment guide trên VM sạch (ảnh trong `evidence/week4/`)
-- [ ] Ảnh minh chứng end-to-end và troubleshooting (`evidence/week4/`)
+- [x] Ảnh minh chứng end-to-end bản final `c7bb2f4`: pipeline, smoke test, web (`evidence/week4/01`–`03`, mô tả trong [`evidence/week4/README.md`](evidence/week4/README.md))
+- [x] Troubleshooting: demo trực tiếp trong buổi báo cáo theo `docs/playbook.md`
 - [x] Technical report 6–10 trang: [`docs/DevOps_Final_Project_2026_Technical_Report.docx`](docs/DevOps_Final_Project_2026_Technical_Report.docx) (nguồn Markdown: [`docs/technical-report.md`](docs/technical-report.md))
 - [ ] Video demo final 5–10 phút
 - [ ] Release/tag `v1.0.0`
@@ -351,4 +351,4 @@ Phần trình bày Week 4:
 | Live troubleshooting | Người phụ trách mục playbook tương ứng: Lực (container dừng, proxy, không truy cập được), Long (database, sai biến môi trường) |
 
 ## Các tuần tiếp theo
-Hướng phát triển (chưa làm): rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.
+Hướng phát triển (chưa làm): chạy thử deployment guide trên một VM hoàn toàn mới, rollback tự động khi smoke test lỗi, quét lỗ hổng image (Trivy), gửi cảnh báo qua Telegram/Email, HTTPS cho Nginx, sao lưu ra ngoài VM.
